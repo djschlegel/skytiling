@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "skytiling"
+version = "0.1.0"
+description = "Uniform all-sky survey tilings for arbitrary camera footprints (CFHT, Subaru, Rubin, VST, ...)"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [{ name = "David Schlegel", email = "djschlegel@lbl.gov" }]
+dependencies = [
+    "numpy",
+    "scipy",
+    "astropy",
+    "matplotlib",
+]
+
+[project.scripts]
+fibonacci_tile = "skytiling.fibonacci_tile:main"
+make_initial_tiling = "skytiling.make_initial_tiling:main"
+optimize_tiling = "skytiling.optimize_tiling:main"
+
+[project.urls]
+Homepage = "https://github.com/djschlegel/skytiling"  # update to the actual GitHub URL
+
+[tool.setuptools]
+packages = ["skytiling"]

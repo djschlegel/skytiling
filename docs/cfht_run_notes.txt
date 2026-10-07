@@ -1,0 +1,39 @@
+; The following is executed one iteration every 13 min on my Mac, 10M randoms, 4 moves/tile
+; Iter   58 | RMS = 0.6540289060 | σ = 0.0564° | Accepted = 3427 (imp=3427, wor=0) | Rejected = 161585 | Rate = 2.08% | MoveDist = [0.0002, 0.0264, 0.1421]° | Time = 792.913 s
+
+python optimize_tiling.py \
+      --force-fork \
+      -t allsky-fib-165012-0.250.fits \
+      -c cfht_40ccds.fits \
+      --num-randoms 10000000 \
+      --max-drift 1.50 \
+      --delta 0.10 \
+      --temp 0.0 \
+      --iters 100 \
+      --plot \
+      --ra-center 10.0 \
+      --dec-center 0.0 \
+      --diameter 5.0 \
+      --moves-per-tile 4 \
+      --write-coverage
+
+; Continue with 30M randoms, 4 moves/tile, 25 min/iteration
+; Initial RMS = 0.7977042755
+; Iter   59 | RMS = 0.7836824924 | σ = 0.1000° | Accepted = 32753 (imp=32753, wor=0) | Rejected = 132259 | Rate = 19.85% | MoveDist = [0.0004, 0.0668, 0.3495]° | Time = 1493.108 s
+
+python optimize_tiling.py \
+      --force-fork \
+      -t output_tiles_0058.fits \
+      -c cfht_40ccds.fits \
+      --num-randoms 30000000 \
+      --max-drift 1.50 \
+      --delta 0.10 \
+      --temp 0.0 \
+      --iters 100 \
+      --plot \
+      --ra-center 10.0 \
+      --dec-center 0.0 \
+      --diameter 5.0 \
+      --moves-per-tile 4 \
+      --write-coverage
+

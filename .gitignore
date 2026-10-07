@@ -1,0 +1,24 @@
+# Large / reproducible data: full-image camera files, random catalogues,
+# intermediate optimizer iterations.  Keep them next to the data but out of git.
+data/*/scratch/
+generated_randoms_*.fits
+output_tiles_*_with_coverage.fits
+
+# Optimizer outputs produced in-place while running
+output_*.fits
+output_*.png
+!data/*/output_*.fits
+!data/*/output_*.png
+allsky-fib-*.dat
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+
+# OS / editors
+.DS_Store
+*.swp
