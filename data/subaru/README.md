@@ -30,7 +30,8 @@ field angle rotated by PA.
 | `FP2FA` | The optical distortion: `field_angle [rad] = sum coef * x_mm^px * y_mm^py`, 55 terms per axis (9th order), straight from the camera model embedded in the flats. |
 | `DETFLATS` | Per (sub-filter, detector): fraction of illuminated pixels and median flat value. |
 | `GOOD_<f>` | 1000x1000 map, 0.1'/cell, +-50': fraction of pixels illuminated by sub-filter `f` (not flagged `NO_DATA`). 0/1 away from edges; NaN where there is no detector (CCD gaps, outside the mosaic). |
-| `THRU_<f>` | Same grid: relative throughput = normalised flat value x `GOOD`. 0 where masked, NaN where no detector. Normalised per sub-filter to 1.0 at the median over r < 20'. |
+| `THRU_<f>` | Same grid: relative throughput, ~1 over the bulk of the field, 0 where masked, NaN where no detector. Built as gain-corrected flat x `GOOD`, normalised per sub-filter at r < 35', divided by a linear-in-radius trend fitted at 12' < r < 38' (the dome-flat illumination gradient) and capped at 1.0. Departures from 1 are the edge vignetting (r > 43'), CCD-to-CCD QE differences of a few %, dead amplifiers and the masked cross/edges. |
+| `RADIAL` | Azimuthal medians vs field radius per sub-filter (1' bins): the gain-corrected flat (`median_raw`), the fitted trend (`model`) and the final throughput (`median_thru`). |
 
 Read it with astropy; `skytiling.lsst_camera.LsstCamera.from_hdus(h['DETECTORS'], h['FP2FA'])`
 rebuilds the geometry.
@@ -67,17 +68,21 @@ CCDs under each quadrant are present (90 of the 104 science CCDs).  Points:
 * **Two CCDs are missing from the 413 set:** `1_34` and `1_47` (their mirror
   images `0_34`, `0_47` are present for 465).  Whether they are dead, had no
   flat, or were dropped on purpose should be checked with Hironao.
-* **The flat values are a relative response, not an absolute throughput.**  They
-  are normalised over the whole mosaic (CCD medians range 0.67-1.33 within a
-  sub-filter) and fall steadily with field radius: median ~1.3-1.45 at r = 10'
-  to ~0.7 at r = 47'.  Part of this is real vignetting (strong beyond ~40'),
-  but a dome flat also carries the dome-screen illumination pattern and
-  scattered light, so the gradient inside ~40' is probably not all throughput.
-  `THRU_<f>` keeps the flat shape (normalised at r < 20'); `GOOD_<f>` is the
-  pure 0/1 footprint.  Which to feed the optimizer (or a model vignetting curve
-  times `GOOD`) is a choice to make, and both are in the file.
-  Levels are not comparable between sub-filters (different lamp flux per
-  narrow band), hence the per-filter normalisation.
+* **The flats are in ADU, not gain-corrected.**  The steps at amplifier
+  boundaries match the per-amplifier gains stored in the embedded Detector
+  table exactly (e.g. `0_53` amp 0->1 step 1.265 vs gain ratio 4.41/3.53;
+  `0_28` amp 3 step 0.761 vs 3.67/4.81; the header `T_GAINn` values are ~10%
+  off and do *not* match).  Multiplying each amplifier by its table gain
+  removes most of the CCD-to-CCD structure (scatter inside 30' drops from
+  8-11% to 5-8%) and collapses the four sub-filters onto one radial curve.
+* **The gain-corrected flat still falls steadily with field radius**, ~1% per
+  arcmin from 12' to 40' and steeply beyond ~43'.  Real HSC vignetting is small
+  inside ~40', so the gentle slope is taken to be the dome-screen illumination
+  pattern and is divided out (linear fit at 12' < r < 38', extrapolated); what
+  is left beyond ~43' (0.75-0.85 at 47') is treated as vignetting.  This is an
+  assumption, recorded in the `RADIAL` table so it can be revisited.  Levels
+  are not comparable between sub-filters (different lamp flux per narrow band),
+  hence the per-filter normalisation.
 * Illuminated area per sub-filter: 413 0.271 deg², 439 0.302, 465 0.301,
   490 0.291 (sum 1.165 deg² of the ~1.5 deg² HSC field).
 
@@ -95,7 +100,8 @@ masks/throughput instead of a model cross.
 
 ## Next steps
 
-1. Decide the throughput model (`THRU` vs `GOOD` vs model vignetting).
+1. Confirm with Hironao: the missing 413 CCDs, the ~10.4' cross width, and
+   that the illumination-gradient assumption above is reasonable.
 2. Extend `optimize_tiling` to (a) take the throughput maps instead of CCD
    polygons, (b) rotate each pointing's footprint by the 4 PAs, and (c)
    optimise per-sub-filter coverage uniformity (4 maps per tile instead of 1).
