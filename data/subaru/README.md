@@ -131,6 +131,33 @@ difference from Hironao's model (it removes 15% of the area), then the wider
 cross, then the dead amplifiers.  `hsc_mbq1_eval_4plus2.png` shows the
 coverage maps.
 
+### Phase 1 only (4 dithers), and tighter grids
+
+Hironao's pointing list (`pointing/hsc_pointing_list_coadd_dr4_FCunique.csv`)
+is not an all-sky tiling: it is the 802 HSC-SSP Wide pointings at
+-6° < Dec < +6.4° (~1165 deg²), on rows 67.5' apart with a *fixed* RA step
+of 1.299° (77.5' x cos Dec on the sky, so the spacing is only right near the
+equator; at Dec 20° it would already be 73').  With only the phase-1 square
+(16 exposures per pointing) and the `GOOD` maps, shrinking the whole hex grid
+(dither offsets kept at their nominal values) gives:
+
+| grid scale | spacing | exposures/deg² | mean n | rms/mean | n<=1 | n=0 | <=1 in any filter | 413 n<=1 |
+|---|---|---|---|---|---|---|---|---|
+| 1.00 | 77.5' x 67.5' | 11.0 | 3.20 | 0.37 | 7.8% | 1.2% | 17.0% | 11.5% |
+| 0.95 | 73.6' x 64.1' | 12.2 | 3.55 | 0.35 | 5.4% | 1.4% | 12.0% | 8.8% |
+| 0.90 | 69.8' x 60.8' | 13.6 | 3.95 | 0.32 | 3.7% | 0.6% | 8.0% | 5.7% |
+| 0.85 | 65.9' x 57.4' | 15.2 | 4.43 | 0.31 | 1.2% | 0.05% | 4.3% | 3.5% |
+| 0.80 | 62.0' x 54.0' | 17.2 | 5.00 | 0.32 | 0.7% | 0.1% | 2.4% | 1.9% |
+| (4+2 at 1.00) | 77.5' x 67.5' | 16.5 | 4.80 | 0.28 | 0.6% | 0.03% | 2.2% | 1.2% |
+
+Scaling the dither offsets along with the grid is slightly worse than keeping
+them fixed.  Closing the grid removes the holes quickly but the rms/mean stays
+at ~0.31-0.32: the non-uniformity is intrinsic to repeating one 16-exposure
+pattern, and at equal cost (scale 0.85 vs 4+2) the 4-dither tight grid is a
+little worse than 4+2 on every metric.  Improving uniformity beyond this needs
+the pointing positions themselves optimised (the skytiling approach) rather
+than a scaled lattice.
+
 ## Next steps
 
 1. Confirm with Hironao: the missing 413 CCDs, the ~10.4' cross width, and
