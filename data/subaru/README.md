@@ -13,6 +13,7 @@ treated as a throughput between 0 and 1 rather than 0/1.
 |---|---|
 | `hsc_mbq1_throughput.fits` | **Compact camera + throughput model** built by `flats_to_throughput` from Hironao Miyatake's dome flats (below). 3.8 MB. |
 | `hsc_mbq1_throughput.png` | The maps in that file. |
+| `hsc_niji_wide_pointings.csv` | The 802 HSC-Niji wide pointing centres (= HSC-SSP Wide, -6 < Dec < 6.4), copied from `hsc-niji-survey/wide-observing-strategy/pointing/hsc_pointing_list_coadd_dr4_FCunique.csv`; defines the survey footprint for `optimize_tiling_maps`. |
 | `flat_run2.tar.gz` | *(git-ignored, 3.9 GB)* Hironao's `flat_mbq1_{413,439,465,490}_run2_mask_nocenter` LSST-pipeline flats, 90 files. |
 | `scratch/` | *(git-ignored)* the untarred flats and a clone of `hsc-niji-survey/wide-observing-strategy`. |
 
