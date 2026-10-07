@@ -104,6 +104,33 @@ skytiling approach differs in optimising the global pointing positions on a
 Fibonacci lattice for uniform coverage, and (here) in using the measured
 masks/throughput instead of a model cross.
 
+## Hironao's 4+2 pattern evaluated with the measured maps
+
+`eval_dither_tiling -t hsc_mbq1_throughput.fits --pattern 4plus2 --plot hsc_mbq1_eval_4plus2.png`
+replicates the `wide_dithering` evaluation (hex grid 77.5' x 67.5', the same
+dither offsets at every pointing, each at PA 0/90/180/270, statistics over one
+periodic cell) but with the per-sub-filter maps from the flats.  Fed his own
+footprint model (CCD rectangles minus an 8.18' cross, no other masks) it
+reproduces his numbers (phase 1 n_obs <= 1 0.48% vs 0.36%, DJS 8.30 vs 8.29;
+phase 1+2 mean n_obs 6.46 vs 6.49), so the differences below come from the
+footprint, not the evaluator.  Mean over the four sub-filters, 0.2' cells:
+
+| footprint | area / quadrant | phase 1: mean n, rms/mean, n<=1, union n<=1 | phase 1+2: mean n, rms/mean, n<=1, union n<=1 |
+|---|---|---|---|
+| Hironao model (8.18' cross) | 0.391 deg² | 4.30, 0.25, 0.5%, 1.6% | 6.46, 0.20, 0.00%, 0.01% |
+| + 10.4' cross as in the flats | 0.367 | 4.04, 0.29, 1.6%, 4.1% | 6.06, 0.22, 0.03%, 0.1% |
+| + vignetted edge r > 46.5' masked | 0.308 | 3.39, 0.34, 5.8%, 10.6% | 5.09, 0.25, 0.24%, 0.8% |
+| + dead amps / missing 413 CCDs (= `GOOD` maps) | 0.291 | 3.20, 0.37, 7.8%, 17.0% | 4.80, 0.28, 0.64%, 2.2% |
+
+Per sub-filter with the `GOOD` maps, phase 1+2: 413 is the worst (mean 4.47,
+rms/mean 0.32, n <= 1 1.2%) because of its two missing CCDs; 439/465/490
+have mean 4.8-5.0 and n <= 1 0.3-0.6%.  Weighting by `THRU` instead of 0/1
+lowers the mean depth by 2-4% and changes the uniformity negligibly, since
+the maps are ~1 over the bulk.  The masked field edge is the single largest
+difference from Hironao's model (it removes 15% of the area), then the wider
+cross, then the dead amplifiers.  `hsc_mbq1_eval_4plus2.png` shows the
+coverage maps.
+
 ## Next steps
 
 1. Confirm with Hironao: the missing 413 CCDs, the ~10.4' cross width, and
