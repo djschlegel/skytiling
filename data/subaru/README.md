@@ -30,8 +30,8 @@ field angle rotated by PA.
 | `FP2FA` | The optical distortion: `field_angle [rad] = sum coef * x_mm^px * y_mm^py`, 55 terms per axis (9th order), straight from the camera model embedded in the flats. |
 | `DETFLATS` | Per (sub-filter, detector): fraction of illuminated pixels and median flat value. |
 | `GOOD_<f>` | 1000x1000 map, 0.1'/cell, +-50': fraction of pixels illuminated by sub-filter `f` (not flagged `NO_DATA`). 0/1 away from edges; NaN where there is no detector (CCD gaps, outside the mosaic). |
-| `THRU_<f>` | Same grid: relative throughput, ~1 over the bulk of the field, 0 where masked, NaN where no detector. Built as gain-corrected flat x `GOOD`, normalised per sub-filter at r < 35', divided by a linear-in-radius trend fitted at 12' < r < 38' (the dome-flat illumination gradient) and capped at 1.0. Departures from 1 are the edge vignetting (r > 43'), CCD-to-CCD QE differences of a few %, dead amplifiers and the masked cross/edges. |
-| `RADIAL` | Azimuthal medians vs field radius per sub-filter (1' bins): the gain-corrected flat (`median_raw`), the fitted trend (`model`) and the final throughput (`median_thru`). |
+| `THRU_<f>` | Same grid: relative throughput, ~1 over the bulk of the field, 0 where masked, NaN where no detector. Built as gain-corrected flat / (sky area per pixel from the distortion model) x `GOOD`, normalised per sub-filter at r < 35', divided by a linear-in-radius trend fitted at 12' < r < 38' (the dome-flat illumination gradient) and capped at 1.0. Departures from 1 are the edge vignetting (r > 43'), CCD-to-CCD QE differences of a few %, dead amplifiers and the masked cross/edges. |
+| `RADIAL` | Azimuthal medians vs field radius per sub-filter (1' bins): the gain-corrected flat over the Jacobian (`median_raw`), the sky area per pixel relative to on-axis (`jacobian`), the fitted illumination trend (`model`) and the final throughput (`median_thru`). |
 
 Read it with astropy; `skytiling.lsst_camera.LsstCamera.from_hdus(h['DETECTORS'], h['FP2FA'])`
 rebuilds the geometry.
@@ -75,11 +75,17 @@ CCDs under each quadrant are present (90 of the 104 science CCDs).  Points:
   off and do *not* match).  Multiplying each amplifier by its table gain
   removes most of the CCD-to-CCD structure (scatter inside 30' drops from
   8-11% to 5-8%) and collapses the four sub-filters onto one radial curve.
-* **The gain-corrected flat still falls steadily with field radius**, ~1% per
-  arcmin from 12' to 40' and steeply beyond ~43'.  Real HSC vignetting is small
-  inside ~40', so the gentle slope is taken to be the dome-screen illumination
-  pattern and is divided out (linear fit at 12' < r < 38', extrapolated); what
-  is left beyond ~43' (0.75-0.85 at 47') is treated as vignetting.  This is an
+* **Part of the radial decline is the optics, not the lamp.**  A flat from a
+  uniform source scales with the sky area per pixel, which the HSC distortion
+  reduces to 0.978 of on-axis at r = 20', 0.949 at 30', 0.903 at 40' and 0.855
+  at 47' (from the embedded distortion polynomial).  A point source's flux is
+  unaffected, so this Jacobian is divided out of the flat.
+* **The gain- and Jacobian-corrected flat still falls with field radius**, now
+  ~0.7% per arcmin from 12' to 40' (about 2/3 of the original slope), and
+  steeply beyond ~43'.  Real HSC vignetting is small inside ~40', so the
+  remaining gentle slope is taken to be the dome-screen illumination pattern
+  and is divided out (linear fit at 12' < r < 38', extrapolated); what is left
+  beyond ~43' (0.80-0.95 at 47') is treated as vignetting.  This is an
   assumption, recorded in the `RADIAL` table so it can be revisited.  Levels
   are not comparable between sub-filters (different lamp flux per narrow band),
   hence the per-filter normalisation.
