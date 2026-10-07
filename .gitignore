@@ -22,3 +22,8 @@ dist/
 # OS / editors
 .DS_Store
 *.swp
+
+# Raw data archives (e.g. data/subaru/flat_run2.tar.gz)
+*.tar
+*.tar.gz
+*.tgz

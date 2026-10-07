@@ -78,9 +78,11 @@ skytiling/            Python package
   fibonacci_tile.py     Fibonacci-lattice all-sky point generator
   make_initial_tiling.py  camera file + mean passes -> initial tiling
   optimize_tiling.py    simulated-annealing coverage optimiser
+  lsst_camera.py        read the camera geometry embedded in LSST-pipeline (HSC, LSSTCam) files
+  flats_to_throughput.py  LSST-pipeline flats -> field-angle throughput/footprint maps
 bin/                  wrappers to run the above from a source checkout
 data/cfht/            CFHT MegaCam camera file, initial tiling, final solution
-data/subaru/          Subaru HSC (inputs in preparation)
+data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model
 docs/                 run notes
 ```
 

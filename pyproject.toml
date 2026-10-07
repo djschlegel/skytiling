@@ -21,6 +21,7 @@ dependencies = [
 fibonacci_tile = "skytiling.fibonacci_tile:main"
 make_initial_tiling = "skytiling.make_initial_tiling:main"
 optimize_tiling = "skytiling.optimize_tiling:main"
+flats_to_throughput = "skytiling.flats_to_throughput:main"
 
 [project.urls]
 Homepage = "https://github.com/djschlegel/skytiling"  # update to the actual GitHub URL
