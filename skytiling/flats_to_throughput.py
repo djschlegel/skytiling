@@ -293,7 +293,7 @@ def main(argv=None):
             ax.plot(rr, mdl, '--', color=col, lw=0.8, label='fitted illumination trend' if k == 0 else None)
             ax.plot(rr, fl, '-o', color=col, ms=3, label=f'MBQ1-{filt}: throughput')
         ax.axhline(1.0, color='k', lw=0.5); ax.axvline(opts.flatten_radius, color='k', lw=0.5, ls='--')
-        ax.set_xlabel('field radius [arcmin]'); ax.set_ylabel('azimuthal median'); ax.set_ylim(0.0, 1.2)
+        ax.set_xlabel('field radius [arcmin]'); ax.set_ylabel('azimuthal median'); ax.set_ylim(0.6, 1.2)
         ax.set_title(f'radial profiles: flat / Jacobian normalised at r < {opts.norm_radius:g}\' (dotted), '
                      f'linear trend fitted at {opts.flatten_rmin:g}-{opts.flatten_radius:g}\' (dashed), '
                      f'throughput = min(flat / trend, {opts.max_thru:g}) (solid)')
