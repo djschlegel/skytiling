@@ -182,18 +182,24 @@ coverage = sum of throughput:
 |---|---|---|---|---|
 | Hironao phase 1 (start) | 2.83, 0.42, 12.9%, 2.0% | 3.23, 0.35, 6.5%, 0.8% | 3.22, 0.36, 7.4%, 1.1% | 3.10, 0.35, 7.6%, 0.9% |
 | annealed, iteration 40 | 2.61, 0.35, 10.4%, 0.9% | 3.01, 0.31, 5.0%, 0.3% | 2.97, 0.30, 4.8%, 0.2% | 2.87, 0.31, 5.9%, 0.3% |
-| Fibonacci start (3221 tiles incl. 0.4° margin), annealed | 2.32, 0.38, 15.6%, 1.2% | 2.67, 0.34, 8.7%, 0.5% | 2.64, 0.34, 9.3%, 0.5% | 2.55, 0.33, 10.0%, 0.6% |
+| Fibonacci start, 3207 tiles inside the footprint (no margin) | 2.77, 0.39, 9.6%, 0.7% | 3.19, 0.34, 4.6%, 0.3% | 3.15, 0.37, 7.4%, 0.6% | 3.05, 0.34, 5.8%, 0.8% |
+| Fibonacci start, annealed, iteration 40 | 2.57, 0.36, 10.9%, 0.9% | 2.96, 0.32, 5.4%, 0.3% | 2.92, 0.31, 5.3%, 0.3% | 2.83, 0.32, 6.5%, 0.4% |
 
 The annealing lowers rms/mean by ~15% and the deep holes (< 0.5) by a factor
 2-4 at the same number of exposures; the mean drops ~7% because edge tiles
 move outward to flatten the footprint boundary (coverage spilling outside the
 footprint is not counted).  The objective was still decreasing slowly at
 iteration 40 (step sigma had shrunk to 0.02°), so a longer/slower anneal will
-improve it further.  The Fibonacci start spreads its tiles over the margin as
-well, hence its lower mean; at equal interior mean it would need ~12% more
-tiles.  `hsc_anneal_from_hironao4_tiles_0040.fits` holds the annealed
+improve it further.  With the same number of tiles placed inside the footprint,
+the un-annealed Fibonacci lattice is already slightly more uniform than the
+phase-1 dither pattern, and after annealing the two starts converge to
+essentially the same quality (rms/mean 0.36 / 0.31-0.32), so the result is
+set by the footprint and tile density rather than the starting layout.  `hsc_anneal_from_{hironao4,fibonacci}_tiles_0040.fits` hold the annealed
 centres (`ra, dec`) with the starting positions (`ra0, dec0`); the PNGs show
 the coverage around (RA, Dec) = (180, 0) before and after.
+
+Longer runs on a Perlmutter node: `nersc/anneal_hsc_fibonacci.sh`,
+`nersc/anneal_hsc_hironao.sh` (see `nersc/README.md`).
 
 ## Next steps
 
