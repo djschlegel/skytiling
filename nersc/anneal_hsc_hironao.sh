@@ -10,7 +10,8 @@
 # Same as anneal_hsc_fibonacci.sh but starting from Hironao's phase-1 layout
 # (4 dithers on each of the 802 wide pointings), for a like-for-like comparison.
 set -e
-REPO=${SKYTILING_REPO:-$(cd "$(dirname "$0")/.." && pwd)}
+REPO=${SKYTILING_REPO:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}}   # submit from the repo root
+if [ ! -f "$REPO/bin/optimize_tiling_maps" ]; then echo "cannot find the repo at $REPO: submit from the repo root or set SKYTILING_REPO"; exit 1; fi
 RUNDIR=${SKYTILING_RUNDIR:-$SCRATCH/skytiling/hsc_hironao}
 mkdir -p "$RUNDIR"; cd "$RUNDIR"
 module load python

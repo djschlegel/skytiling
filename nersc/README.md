@@ -23,7 +23,8 @@ missing; set `SKYTILING_PY` to use another python.)
 
 ## Submit
 
-From the repo root:
+From the repo root (the scripts locate the repo through `SLURM_SUBMIT_DIR`;
+to submit from elsewhere set `SKYTILING_REPO=/path/to/skytiling`):
 
 ```
 sbatch nersc/anneal_hsc_fibonacci.sh        # Fibonacci start, 3208 tiles, 300 iterations

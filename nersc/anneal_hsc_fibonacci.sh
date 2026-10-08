@@ -18,7 +18,8 @@
 # the script create a venv next to the repo the first time (see nersc/README.md).
 
 set -e
-REPO=${SKYTILING_REPO:-$(cd "$(dirname "$0")/.." && pwd)}
+REPO=${SKYTILING_REPO:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}}   # submit from the repo root
+if [ ! -f "$REPO/bin/optimize_tiling_maps" ]; then echo "cannot find the repo at $REPO: submit from the repo root or set SKYTILING_REPO"; exit 1; fi
 RUNDIR=${SKYTILING_RUNDIR:-$SCRATCH/skytiling/hsc_fib}
 mkdir -p "$RUNDIR"; cd "$RUNDIR"
 echo "repo $REPO, run dir $RUNDIR, $(date)"
