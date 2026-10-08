@@ -38,7 +38,7 @@ def parse_arguments(argv=None):
     p.add_argument('--band-profile', choices=['ramp', 'flat'], default='ramp',
                    help='ramp: linear from the map value at the old mask edge to --band-throughput at the new edge; flat: constant')
     p.add_argument('--edge-width', type=float, default=0.5, help='ring outside the old edge used to read the local map value [arcmin]')
-    p.add_argument('--plot', action='store_true', help='write <output>.png showing the change')
+    p.add_argument('--plot', action='store_true', help='write <output>_<filter>.png: one page per sub-filter (its quadrant at full resolution + profiles)')
     return p.parse_args(argv)
 
 
@@ -101,38 +101,40 @@ def main(argv=None):
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        nf = len(filters)
-        zoom = 16.0
-        fig, axes = plt.subplots(2, nf, figsize=(5.0 * nf, 10))
-        for k, f in enumerate(filters):
-            ax = axes[0, k]
-            thru = h[f'THRU_{f}'].data
+        base = os.path.splitext(opts.output)[0]
+        for f in filters:
+            thru = h[f'THRU_{f}'].data; good = h[f'GOOD_{f}'].data
+            # the quadrant this sub-filter occupies, from where its illuminated cells are
+            ok = np.isfinite(good) & (good > 0.5)
+            sx = 1 if np.nanmean(x[ok]) > 0 else -1; sy = 1 if np.nanmean(y[ok]) > 0 else -1
+            fig = plt.figure(figsize=(10, 14))
+            gs = fig.add_gridspec(2, 1, height_ratios=[1.0, 0.42])
+            ax = fig.add_subplot(gs[0])
             im = ax.imshow(thru, origin='lower', extent=[-half, half, -half, half], vmin=0, vmax=1.1, cmap='viridis', interpolation='nearest')
             ax.contour(x, y, changed[f].astype(float), levels=[0.5], colors='r', linewidths=0.5)
-            ax.set_xlim(-zoom, zoom); ax.set_ylim(-zoom, zoom); ax.set_aspect('equal')
-            for v in (-opts.new_half_width, opts.new_half_width): ax.axhline(v, color='w', lw=0.4, ls=':'); ax.axvline(v, color='w', lw=0.4, ls=':')
-            ax.set_title(f'MBQ1-{f}: central {2*zoom:.0f}\' at full resolution ({res}\'); red = ramp band', fontsize=9)
-            ax.set_xlabel('field angle x [arcmin]'); ax.set_ylabel('y [arcmin]')
-            plt.colorbar(im, ax=ax, fraction=0.046)
-            ax = axes[1, k]
-            good = h[f'GOOD_{f}'].data
-            for axis_near, lab, col in ((True, 'distance from the y axis (|x|)', 'C0'), (False, 'distance from the x axis (|y|)', 'C1')):
+            ax.set_xlim(sorted([0.0, sx * half])); ax.set_ylim(sorted([0.0, sy * half])); ax.set_aspect('equal')
+            ax.axhline(sy * opts.new_half_width, color='w', lw=0.5, ls=':'); ax.axvline(sx * opts.new_half_width, color='w', lw=0.5, ls=':')
+            ax.set_title(f'MBQ1-{f}: relative throughput, full map resolution ({res}\'); red = vignetting band '
+                         f'{opts.new_half_width}-{opts.old_half_width}\' from the axes, dotted = opaque cross edge', fontsize=10)
+            ax.set_xlabel('field angle x [arcmin]'); ax.set_ylabel('field angle y [arcmin]')
+            plt.colorbar(im, ax=ax, fraction=0.046, pad=0.02)
+            ax = fig.add_subplot(gs[1])
+            for axis_near, lab, col in ((True, 'vs distance from the y axis (|x|)', 'C0'), (False, 'vs distance from the x axis (|y|)', 'C1')):
                 d = np.abs(x) if axis_near else np.abs(y)
                 other = np.abs(y) if axis_near else np.abs(x)
-                bins = np.arange(3.0, 16.0, 0.25); prof = []
+                bins = np.arange(3.0, 20.0, 0.25); prof = []
                 for lo in bins:
                     sl = (d >= lo) & (d < lo + 0.25) & (other > 8) & (r < 35) & (good > 0.99) & np.isfinite(thru)
                     prof.append(np.median(thru[sl]) if sl.sum() > 10 else np.nan)
                 ax.plot(bins + 0.125, prof, '-', color=col, label=lab)
-            ax.axvline(opts.new_half_width, color='k', lw=0.6, ls='--'); ax.axvline(opts.old_half_width, color='0.5', lw=0.6, ls=':')
+            ax.axvline(opts.new_half_width, color='k', lw=0.6, ls='--', label='opaque edge'); ax.axvline(opts.old_half_width, color='0.5', lw=0.6, ls=':', label='old mask edge')
             ax.axhline(opts.band_throughput, color='0.5', lw=0.5, ls=':')
-            ax.set_ylim(0.6, 1.1); ax.set_xlim(3, 16); ax.grid(alpha=0.3)
-            ax.set_xlabel('distance from the nearer axis [arcmin]'); ax.set_ylabel('median throughput')
-            ax.set_title(f'{f}: profile toward the cross (dashed = opaque edge, dotted = old mask edge)', fontsize=9)
-            if k == 0: ax.legend(fontsize=8, loc='lower right')
-        plt.tight_layout()
-        png = os.path.splitext(opts.output)[0] + '.png'
-        plt.savefig(png, dpi=110); print(f'wrote {png}')
+            ax.set_ylim(0.6, 1.1); ax.set_xlim(3, 20); ax.grid(alpha=0.3); ax.legend(fontsize=9, loc='lower right')
+            ax.set_xlabel('distance from the nearer axis [arcmin]'); ax.set_ylabel('median throughput (r < 35\')')
+            ax.set_title(f'MBQ1-{f}: throughput profile toward the cross', fontsize=10)
+            plt.tight_layout()
+            png = f'{base}_{f}.png'
+            plt.savefig(png, dpi=100); plt.close(fig); print(f'wrote {png}')
 
 
 if __name__ == '__main__':

@@ -18,9 +18,9 @@ adjust_cross -i ../subaru/hsc_mbq1_throughput.fits -o hsc_mbq1_throughput.fits \
     --old-half-width 5.2 --new-half-width 4.09 --band-throughput 0.8 --band-profile ramp --plot
 ```
 
-`hsc_mbq1_throughput.png` shows the central 32' of each sub-filter at full
-map resolution (0.1') with the band outlined in red, and the throughput
-profiles toward the cross along x and y.  The quadrant-to-quadrant difference
+`hsc_mbq1_throughput_<f>.png` (one page per sub-filter) shows that filter's
+quadrant at full map resolution (0.1') with the band outlined in red, and the
+throughput profiles toward the cross along x and y.  The quadrant-to-quadrant difference
 in how early the vignetting starts (strong in 413, absent in 490) comes
 straight from the flats and may be worth checking against the filter-holder
 geometry.
