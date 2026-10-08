@@ -159,7 +159,7 @@ little worse than 4+2 on every metric.  Improving uniformity beyond this needs
 the pointing positions themselves optimised (the skytiling approach) rather
 than a scaled lattice.
 
-## Annealing on the HSC-Niji footprint (`data/subaru/anneal/`)
+## Annealing on the HSC-Niji footprint (`data/subaru/anneal/`, see its README)
 
 `optimize_tiling_maps` moves the tile centres (each observed at PA
 0/90/180/270, optionally plus a per-tile rotation offset that is annealed as
@@ -196,7 +196,7 @@ improve it further.  With the same number of tiles placed inside the footprint,
 the un-annealed Fibonacci lattice is already slightly more uniform than the
 phase-1 dither pattern, and after annealing the two starts converge to
 essentially the same quality (rms/mean 0.36 / 0.31-0.32), so the result is
-set by the footprint and tile density rather than the starting layout.  `hsc_anneal_from_{atsushi4,fibonacci}_tiles_0040.fits` hold the annealed
+set by the footprint and tile density rather than the starting layout.  `anneal/local_40iter/{atsushi4,fibonacci}_tiles_0040.fits` hold the annealed
 centres (`ra, dec`) with the starting positions (`ra0, dec0`); the PNGs show
 the coverage around (RA, Dec) = (180, 0) before and after.
 
@@ -205,9 +205,9 @@ gives a further ~3% in rms/mean and ~8% fewer holes at iteration 40; the
 final offsets have an rms of 16°, with half the tiles turned by more than 10°.
 
 The Perlmutter runs (positions + rotations, 4M randoms) from the Fibonacci
-start (277 iterations, `anneal/hsc_anneal_nersc_fibrot_tiles_0276.fits`)
+start (277 iterations, `anneal/nersc_fibonacci/tiles_0276.fits`)
 and from Atsushi's phase-1 layout (300 iterations,
-`anneal/hsc_anneal_nersc_atsushirot_tiles_0300.fits`) both reach interior
+`anneal/nersc_atsushi/tiles_0300.fits`) both reach interior
 rms/mean 0.34 / 0.29-0.30 / 0.29 / 0.29-0.30 and are converged; see
 `docs/hsc_mbq1_anneal_summary.md` (and `.pdf`) for the write-up with figures.
 

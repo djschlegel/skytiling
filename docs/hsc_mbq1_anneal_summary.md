@@ -65,7 +65,7 @@ annealed from the Fibonacci lattice (bottom, iteration 276), same colour scale.*
 *Figure 2. Convergence of the objective for both starts; distribution of MBQ1-413 coverage over the
 footprint interior; annealed rotation offsets; and displacement of each pointing from its starting position.*
 
-Files: `hsc_atsushi/atsushi_tiles_0300.fits` and `hsc_fib/fib_tiles_0276.fits` (columns `ra, dec, rot,
-ra0, dec0`; each row is one pointing to be observed at `rot`, `rot+90`, `rot+180`, `rot+270`), evaluated
-on `hsc_fib/fib_randoms_4000000.fits`. The mapping
+Files: `data/subaru/anneal/nersc_atsushi/tiles_{0000,0300}.fits` and
+`data/subaru/anneal/nersc_fibonacci/tiles_{0000,0276}.fits` (initial and final; columns `ra, dec, rot,
+ra0, dec0`; each row is one pointing to be observed at `rot`, `rot+90`, `rot+180`, `rot+270`). The mapping
 of `rot` onto `INSROT_PA` (sign and zero point) still has to be calibrated against the instrument.
