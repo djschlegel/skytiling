@@ -204,6 +204,12 @@ Letting each tile's rotation offset anneal too (the four PAs stay 90° apart)
 gives a further ~3% in rms/mean and ~8% fewer holes at iteration 40; the
 final offsets have an rms of 16°, with half the tiles turned by more than 10°.
 
+The Perlmutter run (Fibonacci start, positions + rotations, 4M randoms,
+207 iterations, `anneal/hsc_anneal_nersc_fibrot_tiles_0206.fits`) reaches
+interior rms/mean 0.34 / 0.30 / 0.29 / 0.30 and is essentially converged;
+see `docs/hsc_mbq1_anneal_summary.md` (and `.pdf`) for the write-up with
+figures.
+
 Longer runs on a Perlmutter node: `nersc/anneal_hsc_fibonacci.sh`,
 `nersc/anneal_hsc_hironao.sh` (see `nersc/README.md`).
 

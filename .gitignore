@@ -27,3 +27,7 @@ dist/
 *.tar
 *.tar.gz
 *.tgz
+Claude outputs/
+
+# local copies of NERSC run directories (checkpoints every iteration, randoms)
+/hsc_fib/
