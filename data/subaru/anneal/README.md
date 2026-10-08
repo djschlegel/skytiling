@@ -10,7 +10,7 @@ coverage statistics over all randoms at that iteration.
 
 | directory | contents |
 |---|---|
-| `nersc_atsushi/` | Perlmutter run starting from Atsushi's phase-1 dither pattern (4 dithers on each of the 802 wide pointings = 3208 tiles): `tiles_0000.fits` (the start, rot = 0) and `tiles_0300.fits` (**final**), plus `convergence.txt` (per-iteration mean and rms per filter). |
+| `nersc_atsushi/` | Perlmutter run starting from Atsushi's phase-1 dither pattern (4 dithers on each of the 802 wide pointings = 3208 tiles): `tiles_0000.fits` (the start, rot = 0) and `tiles_0300.fits` (final, full precision), plus `convergence.txt` (per-iteration mean and rms per filter). **`hsc_mbq1_tiling_atsushi_final.{fits,csv}` is the adopted solution**: `tileid, ra, dec, rot` with RA/Dec rounded to 1e-4 deg and ROT to 0.1 deg (verified to change the coverage statistics by < 1e-4). |
 | `nersc_fibonacci/` | Perlmutter run starting from a Fibonacci lattice of 3207 tiles inside the footprint: `tiles_0000.fits` (start) and `tiles_0276.fits` (**final**), `convergence.txt`. |
 | `local_40iter/` | Earlier 40-iteration runs on a laptop (2M randoms): from Atsushi's layout (`atsushi4_*`), from a Fibonacci start without (`fibonacci_*`) and with (`fibonacci_rot_*`) rotation annealing; logs and coverage plots included. |
 
