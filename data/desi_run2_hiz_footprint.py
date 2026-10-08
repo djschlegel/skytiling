@@ -18,6 +18,7 @@ from scipy.spatial import cKDTree
 
 REPO = os.environ.get('SKYTILING_REPO', os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 RA0 = 90.0            # RA at the centre of the map (east to the left, as in the existing figures)
+MIN_PIECE_DEG2 = 10.0  # IBIS+POLU pieces of the Niji stripes smaller than this are dropped
 
 def lon(ra):
     """Mollweide longitude [rad] for RA [deg]: RA increases to the left, RA0 at the centre."""
@@ -38,6 +39,18 @@ def read_stripes():
     for name in ('SGC-3', 'SGC-4'):           # the Niji southern extension, in addition to the IBIS+POLU stripes of the same name
         n = niji[name]
         stripes.append(dict(name=name + ' (Niji)', ra_min=float(n['ra_min']), ra_max=float(n['ra_max']), dec_min=float(n['dec_min']), dec_max=float(n['dec_max']), kind='niji', ext=False))
+    # the parts of the Niji stripes outside the HSC data, at the DESI RA bounds, are imaged by IBIS+POLU instead
+    for r in full:
+        name = r['name']
+        if name not in ('NGC-5', 'NGC-6', 'SGC-1', 'SGC-2'):
+            continue
+        n = niji[name]; dc = float(r['dec_center'])
+        for side, (lo, hi) in (('W', (float(r['ra_min']), float(n['ra_min']))), ('E', (float(n['ra_max']), float(r['ra_max'])))):
+            if (hi - lo) % 360.0 <= 0 or (hi - lo) % 360.0 > 180:
+                continue
+            piece = dict(name=f'{name} ({side}, IBIS)', ra_min=lo, ra_max=hi, dec_min=dc - 1.4, dec_max=dc + 1.4, kind='ibis', ext=False)
+            if rect_area(piece) >= MIN_PIECE_DEG2:
+                stripes.append(piece)
     return stripes
 
 def rect_area(s):
@@ -148,7 +161,7 @@ if __name__ == '__main__':
             kw = dict(facecolor='#f2a65a' if s['kind'] == 'ibis' else '#5aa469', alpha=0.85 if not s['ext'] else 0.45, edgecolor='k', lw=0.4)
             if s['ext']: kw.update(hatch='////', edgecolor='#b06d1f')
             ax.add_patch(plt.Rectangle((x0, s['dec_min']), w, s['dec_max'] - s['dec_min'], **kw))
-            ax.text(x0 + w + 0.6, 0.5 * (s['dec_min'] + s['dec_max']), s['name'].replace(' (Niji)', ''), fontsize=7, va='center')
+            if 'IBIS)' not in s['name']: ax.text(x0 + w + 0.6, 0.5 * (s['dec_min'] + s['dec_max']), s['name'].replace(' (Niji)', ''), fontsize=7, va='center')
         ax.set_xlim(hi, lo); ax.set_ylim(-23, 18); ax.grid(alpha=0.3)
         ticks = np.arange(lo, hi + 1, 15); ax.set_xticks(ticks); ax.set_xticklabels([f'{t % 360:g}' for t in ticks])
         ax.set_xlabel('R.A. [deg]'); ax.set_ylabel('Dec. [deg]'); ax.set_title(f'{lab}: DESI Run 2 imaging stripes (orange: IBIS+POLU, hatched: possible extensions; green: HSC-Niji+VST)', fontsize=9)
