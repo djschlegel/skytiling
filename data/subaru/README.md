@@ -185,6 +185,7 @@ coverage = sum of throughput:
 | annealed, iteration 40 | 2.61, 0.35, 10.4%, 0.9% | 3.01, 0.31, 5.0%, 0.3% | 2.97, 0.30, 4.8%, 0.2% | 2.87, 0.31, 5.9%, 0.3% |
 | Fibonacci start, 3207 tiles inside the footprint (no margin) | 2.77, 0.39, 9.6%, 0.7% | 3.19, 0.34, 4.6%, 0.3% | 3.15, 0.37, 7.4%, 0.6% | 3.05, 0.34, 5.8%, 0.8% |
 | Fibonacci start, annealed, iteration 40 | 2.57, 0.36, 10.9%, 0.9% | 2.96, 0.32, 5.4%, 0.3% | 2.92, 0.31, 5.3%, 0.3% | 2.83, 0.32, 6.5%, 0.4% |
+| Fibonacci start, positions + rotations annealed (`--delta-rot 10`), it. 40 | 2.58, 0.35, 10.1%, 0.8% | 2.97, 0.31, 5.0%, 0.3% | 2.94, 0.30, 4.8%, 0.2% | 2.84, 0.31, 5.9%, 0.3% |
 
 The annealing lowers rms/mean by ~15% and the deep holes (< 0.5) by a factor
 2-4 at the same number of exposures; the mean drops ~7% because edge tiles
@@ -198,6 +199,10 @@ essentially the same quality (rms/mean 0.36 / 0.31-0.32), so the result is
 set by the footprint and tile density rather than the starting layout.  `hsc_anneal_from_{hironao4,fibonacci}_tiles_0040.fits` hold the annealed
 centres (`ra, dec`) with the starting positions (`ra0, dec0`); the PNGs show
 the coverage around (RA, Dec) = (180, 0) before and after.
+
+Letting each tile's rotation offset anneal too (the four PAs stay 90° apart)
+gives a further ~3% in rms/mean and ~8% fewer holes at iteration 40; the
+final offsets have an rms of 16°, with half the tiles turned by more than 10°.
 
 Longer runs on a Perlmutter node: `nersc/anneal_hsc_fibonacci.sh`,
 `nersc/anneal_hsc_hironao.sh` (see `nersc/README.md`).
