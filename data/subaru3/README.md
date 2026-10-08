@@ -147,7 +147,8 @@ the lowest row of cells, so a 0.4-deg strip there is only half covered); the SGC
 sits inside the HSC Dec range.  **`niji_stripes_2p8_hsc.csv` — the adopted footprint —** is the same four stripes with
 the RA bounds trimmed to the HSC extent (NGC 128.0-226.0, SGC 330.2-39.7): 937 deg², of
 which 905 inside HSC and 32 outside (the NGC-6 bottom strip); 637 lattice centres, 2548
-tiles with Atsushi's four dithers.
+tiles with Atsushi's four dithers.  `niji_stripes_hsc_vs_hsc.png` is the same overlay for the
+trimmed stripes.
 
 | stripe (trimmed) | RA | Dec (2.8-deg band) | area deg² |
 |---|---|---|---|
