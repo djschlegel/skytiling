@@ -86,6 +86,7 @@ bin/                  wrappers to run the above from a source checkout
 data/cfht/            CFHT MegaCam camera file, initial tiling, final solution
 data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model
 docs/                 run notes
+nersc/                Perlmutter batch scripts and notes for the HSC runs
 ```
 
 Each `data/<camera>/` directory has its own README describing the files.

@@ -35,6 +35,12 @@ import os
 import re
 import sys
 import time
+import multiprocessing as mp
+
+# One BLAS/OpenMP thread per worker process (see optimize_tiling.py).
+for _v in ("OMP_NUM_THREADS", "OPENBLAS_NUM_THREADS", "MKL_NUM_THREADS", "NUMEXPR_NUM_THREADS",
+           "VECLIB_MAXIMUM_THREADS"):
+    os.environ.setdefault(_v, "1")
 
 import numpy as np
 
@@ -168,14 +174,76 @@ class Footprint:
 
 
 # ----------------------------------------------------------------------------- optimizer
+# Module-level state inherited by forked worker processes (never pickled per task):
+# shared randoms, shared coverage, candidate index lists, camera, initial tile positions.
+_G = {}
+
+
+def _tile_coverage(cam, rot, t, pts):
+    east, north = east_north(t)
+    lx, ly = tangent_coords(pts, t, east, north)
+    return cam.coverage(lx, ly, rot)
+
+
+def _worker(task):
+    """Process a chunk of tiles from one layer: propose moves, accept, update shared coverage.
+
+    task = (items, sum_c, sigma, seed) with items = [(i, tile_xyz), ...].
+    Tiles in one layer have disjoint candidate sets, so workers never write the
+    same coverage rows.  Returns [(i, new_xyz, accepted, d_sum, d_sum2, move_deg), ...].
+    """
+    items, sum_c, sigma, seed = task
+    cam, rot = _G['cam'], _G['rot']
+    n_rand, nf = _G['n_rand'], cam.nf
+    cov = np.frombuffer(_G['cov_raw'], dtype=np.float32).reshape(n_rand, nf)
+    rand = np.frombuffer(_G['xyz_raw'], dtype=np.float64).reshape(n_rand, 3)
+    cand, tiles0 = _G['cand'], _G['tiles0']
+    max_drift, temp, k = _G['max_drift'], _G['temp'], _G['moves_per_tile']
+    rng = np.random.default_rng(seed)
+    sum_c = np.array(sum_c, dtype=np.float64)
+    out = []
+    for i, t in items:
+        c = cand[i]
+        if len(c) == 0:
+            out.append((i, t, False, None, None, 0.0)); continue
+        pts = rand[c]
+        cur = cov[c].astype(np.float64)
+        old = _tile_coverage(cam, rot, t, pts).astype(np.float64)
+        east, north = east_north(t)
+        best = None
+        for _ in range(k):
+            dx, dy = rng.normal(0, sigma, 2)
+            p = t + dx * east + dy * north
+            p /= np.linalg.norm(p)
+            d0 = np.arccos(np.clip(p @ tiles0[i], -1, 1))
+            if d0 > max_drift:
+                p = tiles0[i] + (p - tiles0[i]) * (max_drift / d0)
+                p /= np.linalg.norm(p)
+            new = _tile_coverage(cam, rot, p, pts).astype(np.float64)
+            delta = new - old
+            d_sum = delta.sum(axis=0)
+            d_sum2 = (2 * cur * delta + delta ** 2).sum(axis=0)
+            d_e = float(np.sum(d_sum2 - (2 * sum_c * d_sum + d_sum ** 2) / n_rand))
+            if best is None or d_e < best[0]:
+                best = (d_e, p, delta, d_sum, d_sum2)
+        d_e, p, delta, d_sum, d_sum2 = best
+        accept = d_e < 0 or (temp > 0 and rng.random() < np.exp(-d_e / (temp * 1e6)))
+        if accept:
+            cov[c] += delta.astype(np.float32)
+            sum_c += d_sum
+            out.append((i, p, True, d_sum, d_sum2, float(np.degrees(np.arccos(np.clip(p @ t, -1, 1))))))
+        else:
+            out.append((i, t, False, None, None, 0.0))
+    return out
+
+
 class MapTilingOptimizer:
     def __init__(self, camera, randoms_xyz, tiles_xyz, rotations_deg, max_drift, delta,
-                 temp, moves_per_tile, seed=0):
+                 temp, moves_per_tile, seed=0, workers=1):
         from scipy.spatial import cKDTree
         self.cam = camera
         self.rot = [np.radians(r) for r in rotations_deg]
-        self.rand = np.ascontiguousarray(randoms_xyz, dtype=np.float64)
-        self.n_rand = len(self.rand)
+        self.n_rand = len(randoms_xyz)
         self.tiles = np.ascontiguousarray(tiles_xyz, dtype=np.float64)
         self.tiles0 = self.tiles.copy()
         self.n_tiles = len(self.tiles)
@@ -183,30 +251,72 @@ class MapTilingOptimizer:
         self.sigma = np.radians(delta)
         self.temp = temp
         self.moves_per_tile = max(1, int(moves_per_tile))
+        self.workers = max(1, int(workers))
         self.rng = np.random.default_rng(seed)
-        self.cov = np.zeros((self.n_rand, self.cam.nf), dtype=np.float32)
         self.interior = np.ones(self.n_rand, dtype=bool)
+        self.pool = None
+
+        # shared randoms and coverage (RawArrays inherited by forked workers)
+        self._xyz_raw = mp.RawArray('d', self.n_rand * 3)
+        self.rand = np.frombuffer(self._xyz_raw, dtype=np.float64).reshape(self.n_rand, 3)
+        self.rand[:] = randoms_xyz
+        self._cov_raw = mp.RawArray('f', self.n_rand * self.cam.nf)
+        self.cov = np.frombuffer(self._cov_raw, dtype=np.float32).reshape(self.n_rand, self.cam.nf)
+        self.cov[:] = 0
 
         t0 = time.time()
         self.tree = cKDTree(self.rand)
         chord = 2 * np.sin((np.radians(self.cam.max_radius) + self.max_drift) / 2)
-        self.cand = self.tree.query_ball_point(self.tiles, chord)
-        self.cand = [np.array(c, dtype=np.int64) for c in self.cand]
+        self.cand = [np.array(c, dtype=np.int64) for c in self.tree.query_ball_point(self.tiles, chord)]
         print(f'[timing] candidate sets in {time.time() - t0:.1f} s; '
-              f'mean {np.mean([len(c) for c in self.cand]):.0f} randoms per tile')
+              f'mean {np.mean([len(c) for c in self.cand]):.0f} randoms per tile', flush=True)
 
         t0 = time.time()
         for i in range(self.n_tiles):
             c = self.cand[i]
             if len(c):
                 self.cov[c] += self._tile_coverage(self.tiles[i], self.rand[c])
-        print(f'[timing] initial coverage in {time.time() - t0:.1f} s')
+        print(f'[timing] initial coverage in {time.time() - t0:.1f} s', flush=True)
         self._refresh_sums()
 
+        t0 = time.time()
+        self.layers = self._build_layers()
+        print(f'[timing] {len(self.layers)} layers (mean {self.n_tiles / len(self.layers):.1f} tiles) in {time.time() - t0:.1f} s', flush=True)
+
     def _tile_coverage(self, t, pts):
-        east, north = east_north(t)
-        lx, ly = tangent_coords(pts, t, east, north)
-        return self.cam.coverage(lx, ly, self.rot)
+        return _tile_coverage(self.cam, self.rot, t, pts)
+
+    def _build_layers(self):
+        """Greedy colouring so that no two tiles closer than 2*(max_radius + max_drift)
+        share a layer: their candidate sets are then disjoint and can be updated in parallel."""
+        from scipy.spatial import cKDTree
+        sep = 2 * (np.radians(self.cam.max_radius) + self.max_drift)
+        chord = 2.0 if sep >= np.pi else 2 * np.sin(sep / 2)
+        tree = cKDTree(self.tiles0)
+        nb = tree.query_ball_point(self.tiles0, chord)
+        order = sorted(range(self.n_tiles), key=lambda i: len(self.cand[i]), reverse=True)
+        colour = np.full(self.n_tiles, -1)
+        for i in order:
+            used = {colour[j] for j in nb[i] if colour[j] >= 0}
+            c = 0
+            while c in used:
+                c += 1
+            colour[i] = c
+        layers = [[] for _ in range(colour.max() + 1)]
+        for i in order:
+            layers[colour[i]].append(i)
+        return layers
+
+    def _start_pool(self):
+        """Fork the worker pool with the shared state in place (call after the
+        randoms, coverage, candidates and tiles0 are set and will not be replaced)."""
+        if self.workers <= 1:
+            return
+        _G.update(cam=self.cam, rot=self.rot, n_rand=self.n_rand, cov_raw=self._cov_raw, xyz_raw=self._xyz_raw,
+                  cand=self.cand, tiles0=self.tiles0, max_drift=self.max_drift, temp=self.temp,
+                  moves_per_tile=self.moves_per_tile)
+        ctx = mp.get_context('fork')
+        self.pool = ctx.Pool(self.workers)
 
     def _refresh_sums(self):
         self.sum_c = self.cov.sum(axis=0, dtype=np.float64)
@@ -221,55 +331,37 @@ class MapTilingOptimizer:
         return float(np.sum(self.sum_c2 - self.sum_c ** 2 / self.n_rand))
 
     def iterate(self):
-        """One sweep over all tiles in random order; returns summary dict."""
-        order = self.rng.permutation(self.n_tiles)
+        """One sweep over all layers; returns summary dict."""
+        if self.workers > 1 and self.pool is None:
+            self._start_pool()
+        _G.update(cam=self.cam, rot=self.rot, n_rand=self.n_rand, cov_raw=self._cov_raw, xyz_raw=self._xyz_raw,
+                  cand=self.cand, tiles0=self.tiles0, max_drift=self.max_drift, temp=self.temp,
+                  moves_per_tile=self.moves_per_tile)
         acc = imp = rej = 0
         dists = []
-        for i in order:
-            c = self.cand[i]
-            if len(c) == 0:
-                rej += 1
-                continue
-            pts = self.rand[c]
-            cur = self.cov[c].astype(np.float64)
-            t = self.tiles[i]
-            old = self._tile_coverage(t, pts).astype(np.float64)
-            east, north = east_north(t)
-            best = None
-            for _ in range(self.moves_per_tile):
-                dx, dy = self.rng.normal(0, self.sigma, 2)
-                p = t + dx * east + dy * north
-                p /= np.linalg.norm(p)
-                d0 = np.arccos(np.clip(p @ self.tiles0[i], -1, 1))
-                if d0 > self.max_drift:
-                    p = self.tiles0[i] + (p - self.tiles0[i]) * (self.max_drift / d0)
-                    p /= np.linalg.norm(p)
-                new = self._tile_coverage(p, pts).astype(np.float64)
-                delta = new - old                                   # (C, nf)
-                d_sum = delta.sum(axis=0)
-                d_sum2 = (2 * cur * delta + delta ** 2).sum(axis=0)
-                d_e = float(np.sum(d_sum2 - (2 * self.sum_c * d_sum + d_sum ** 2) / self.n_rand))
-                if best is None or d_e < best[0]:
-                    best = (d_e, p, delta, d_sum, d_sum2)
-            d_e, p, delta, d_sum, d_sum2 = best
-            if d_e < 0:
-                accept, imp = True, imp + 1
-            elif self.temp > 0 and self.rng.random() < np.exp(-d_e / (self.temp * 1e6)):
-                accept = True
-            else:
-                accept = False
-            if accept:
-                self.cov[c] += delta.astype(np.float32)
-                self.sum_c += d_sum; self.sum_c2 += d_sum2
-                dists.append(np.degrees(np.arccos(np.clip(p @ t, -1, 1))))
-                self.tiles[i] = p
-                acc += 1
-            else:
-                rej += 1
-        self._refresh_sums()   # guard against float32 drift
+        for layer in self.layers:
+            layer = [int(i) for i in self.rng.permutation(layer)]
+            nchunk = min(self.workers, len(layer)) if self.workers > 1 else 1
+            chunks = [layer[j::nchunk] for j in range(nchunk)]
+            tasks = [([(i, self.tiles[i]) for i in ch], self.sum_c.copy(), self.sigma, int(self.rng.integers(2 ** 31)))
+                     for ch in chunks if ch]
+            results = self.pool.map(_worker, tasks) if self.pool else [_worker(t) for t in tasks]
+            for res in results:
+                for i, p, accepted, d_sum, d_sum2, move in res:
+                    if accepted:
+                        self.tiles[i] = p
+                        self.sum_c += d_sum; self.sum_c2 += d_sum2
+                        dists.append(move); acc += 1
+                    else:
+                        rej += 1
+        self._refresh_sums()   # exact sums (guards float32 accumulation and stale sums in workers)
         mean, rms = self.stats()
-        return dict(accepted=acc, improved=imp, rejected=rej, mean=mean, rms=rms,
+        return dict(accepted=acc, improved=acc, rejected=rej, mean=mean, rms=rms,
                     move=(np.min(dists), np.median(dists), np.max(dists)) if dists else (0, 0, 0))
+
+    def close(self):
+        if self.pool:
+            self.pool.close(); self.pool.join(); self.pool = None
 
     # ----------------------------------------------------------------- output
     def write_tiles(self, path, iteration):
@@ -366,6 +458,8 @@ def parse_arguments(argv=None):
     p.add_argument('--moves-per-tile', type=int, default=3)
     p.add_argument('--iters', type=int, default=20)
     p.add_argument('--seed', type=int, default=1)
+    p.add_argument('--workers', type=int, default=0,
+                   help='worker processes (0 = NCPUS / SLURM_CPUS_PER_TASK / all CPUs)')
     p.add_argument('-o', '--output', default='output_', help='output prefix')
     p.add_argument('--plot', action='store_true')
     p.add_argument('--ra-center', type=float); p.add_argument('--dec-center', type=float)
@@ -427,26 +521,42 @@ def main(argv=None):
     else:
         if fp is None:
             sys.exit('need --footprint for a Fibonacci initial tiling')
+        rot0 = rng.uniform(0, 360)   # lattice rotation about the pole, so its seam is not aligned with the footprint
+
+        def clipped_lattice(tilearea):
+            n_all = int(round(SPHERE_AREA_DEG2 / tilearea))
+            _, fra_all, fdec_all = fibonacci_points(n_all)
+            xyz = radec_to_xyz((fra_all + rot0) % 360, fdec_all)
+            return n_all, xyz[fp.contains(xyz, extra=opts.margin)]
+
         if opts.ntiles:
-            area_ext = fp.area(rng) if opts.margin == 0 else Footprint(fra, fdec, opts.footprint_radius + opts.margin).area(rng)
-            tilearea = area_ext / opts.ntiles
+            # bisect the lattice density until exactly --ntiles fall inside footprint + margin
+            area_ext = Footprint(fra, fdec, opts.footprint_radius + opts.margin).area(rng)
+            lo, hi = 0.5 * area_ext / opts.ntiles, 2.0 * area_ext / opts.ntiles
+            for _ in range(60):
+                tilearea = 0.5 * (lo + hi)
+                n_all, tiles = clipped_lattice(tilearea)
+                if len(tiles) == opts.ntiles:
+                    break
+                if len(tiles) > opts.ntiles:
+                    lo = tilearea
+                else:
+                    hi = tilearea
         elif opts.tilearea:
             tilearea = opts.tilearea
+            n_all, tiles = clipped_lattice(tilearea)
         else:
             sys.exit('give --ntiles or --tilearea for the Fibonacci initial tiling')
-        n_all = int(round(SPHERE_AREA_DEG2 / tilearea))
-        _, fra_all, fdec_all = fibonacci_points(n_all)
-        # random rotation about the pole so the lattice seam is not aligned with the footprint
-        fra_all = (fra_all + rng.uniform(0, 360)) % 360
-        xyz = radec_to_xyz(fra_all, fdec_all)
-        keep = fp.contains(xyz, extra=opts.margin)
-        tiles = xyz[keep]; tiles0 = tiles.copy()
+        tiles0 = tiles.copy()
         print(f'Fibonacci lattice: {tilearea:.4f} deg^2 per tile ({n_all} all-sky), {len(tiles)} inside footprint + {opts.margin} deg margin')
     print(f'expected mean coverage per filter ~ {np.round(len(tiles) * len(rot) * cam.area / (fp.area(rng) if fp else 1), 3)} '
           f'(tiles x rotations x area / footprint area; edge tiles cover outside)')
 
-    opt = MapTilingOptimizer(cam, rand, tiles, rot, opts.max_drift, opts.delta, opts.temp, opts.moves_per_tile, seed=opts.seed)
-    opt.tiles0 = tiles0
+    workers = opts.workers or int(os.environ.get('NCPUS', os.environ.get('SLURM_CPUS_PER_TASK', os.cpu_count() or 1)))
+    print(f'using {workers} worker process(es)')
+    opt = MapTilingOptimizer(cam, rand, tiles, rot, opts.max_drift, opts.delta, opts.temp, opts.moves_per_tile,
+                             seed=opts.seed, workers=workers)
+    opt.tiles0[:] = tiles0
     if fp is not None:
         opt.interior = fp.interior(rand)
     opt.report('initial')
@@ -468,6 +578,7 @@ def main(argv=None):
         if opts.plot:
             opt.plot(f'{opts.output}coverage_{it:04d}.png', opts.ra_center, opts.dec_center, opts.diameter)
         opt.sigma *= opts.shrink
+    opt.close()
     opt.report('final')
 
 
