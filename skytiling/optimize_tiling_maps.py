@@ -436,7 +436,7 @@ class MapTilingOptimizer:
             ax = axes[1, k]
             ax.hist(self.cov[:, k], bins=np.arange(0, vmax + 0.25, 0.25), color=f'C{k}')
             ax.set_title(f'{f}: mean {mean[k]:.2f}, rms {rms[k]:.2f}, rms/mean {rms[k] / mean[k]:.3f}')
-            ax.set_xlabel('coverage (sum of throughput)'); ax.set_yscale('log')
+            ax.set_xlabel('coverage (sum of throughput)'); ax.set_ylabel('randoms')
         plt.tight_layout(); plt.savefig(path, dpi=80); plt.close(fig)
 
 
