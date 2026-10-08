@@ -98,9 +98,19 @@ exclude points within `--interior-margin` 0.75 deg of its boundary).
 with the HSC-SSP Wide spacing, fitted to each band (5 rows per 5.6-deg band,
 1.12 deg apart, with the number of columns rounded so the lattice is centred
 in each row's RA extent), and `--init-offsets` adds Atsushi's four dithers:
-784 centres, 3136 tiles, 1.45 deg² per centre as in his layout.  The output
-tables carry a `pid` column (index of the undithered centre) so the four
-dithers of a pointing can be scheduled together.
+1.45 deg² per centre as in his layout (784 centres / 3136 tiles on the DESI bounds,
+637 / 2548 on the trimmed stripes).  Alternatively `--init-centers
+../subaru/hsc_niji_wide_pointings.csv --margin 0` starts from the HSC-SSP Wide
+pointings themselves, keeping the 640 whose centres fall inside the trimmed stripes
+(five rows per band in each cap, e.g. Dec -1.3, -0.18, 0.95, 2.08, 3.2 in the NGC): the
+two starts have the same density and, with the four dithers, the same coverage
+statistics to within 1-2% (lattice: 6.1% of the coverage outside the footprint, inside
+rms/mean 0.39 / 0.34 / 0.35 / 0.34; SSP pointings: 6.7%, 0.40 / 0.34 / 0.35 / 0.35 — the
+SSP rows sit 0.28 deg below the top of the NGC band and 0.82 deg above its bottom, the
+lattice rows 0.56 deg from both edges).  The output tables carry a `pid` column (index
+of the undithered centre; with `--init-centers`, the row index in that CSV) and, when
+the CSV has names, a `pname` column (e.g. `W_010001`), so the four dithers of a
+pointing can be scheduled together and traced to the SSP pointing.
 
 To stop the anneal pushing coverage outside the footprint, `--objective cv
 --cv-power p` minimises Σ_f rms_f / mean_f^p instead of Σ_f N Var(c_f).

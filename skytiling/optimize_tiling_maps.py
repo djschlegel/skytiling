@@ -550,6 +550,9 @@ class MapTilingOptimizer:
                 fits.Column(name='ra0', format='D', array=ra0), fits.Column(name='dec0', format='D', array=dec0)]
         if getattr(self, 'pid', None) is not None:
             cols.append(fits.Column(name='pid', format='K', array=np.asarray(self.pid, dtype=np.int64)))
+        if getattr(self, 'pname', None) is not None:
+            w = max(len(str(v)) for v in self.pname)
+            cols.append(fits.Column(name='pname', format=f'{w}A', array=np.asarray(self.pname, dtype=f'U{w}')))
         hdu = fits.BinTableHDU.from_columns(cols, name='TILES')
         hdu.header['ITER'] = iteration
         hdu.header['OBJECTIV'] = (self.objective + (f' p={self.cv_power:g}' if self.objective == 'cv' else ''), 'annealing objective')
@@ -640,6 +643,8 @@ def parse_arguments(argv=None):
                                            '"dx,dy dx,dy ..." [arcmin, +x = +RA]; e.g. Atsushi phase 1')
     p.add_argument('--init-lattice', help='for --rects: pointing centres on rows of constant Dec, "dra,ddec" [deg] '
                                           '(e.g. "1.299,1.125" = the HSC-SSP Wide lattice); combine with --init-offsets')
+    p.add_argument('--init-centers', help='CSV of pointing centres (ra, dec; optional id) to start from, keeping those inside '
+                                          'the footprint (+ --margin); pid = id column or row index; combine with --init-offsets')
     p.add_argument('--objective', choices=['var', 'cv'], default='var',
                    help='var: sum_f N Var(c_f) (default); cv: sum_f rms_f / mean_f^power, which also rewards '
                         'coverage kept inside the footprint')
@@ -705,6 +710,7 @@ def main(argv=None):
     start_iter = 0
     theta = None
     pid = None          # pointing id (index of the undithered centre) when tiles come from centres x offsets
+    pname = None        # pointing name from --init-centers, if its CSV has one
     if opts.tiles:
         d = fits.getdata(opts.tiles)
         tiles = radec_to_xyz(d['ra'], d['dec'])
@@ -712,6 +718,8 @@ def main(argv=None):
             theta = np.array(d['rot'], float)
         if 'pid' in d.names:
             pid = np.array(d['pid'], int)
+        if 'pname' in d.names:
+            pname = np.array(d['pname'])
         it = parse_resume_iteration(opts.tiles)
         if it is not None and 'ra0' in d.names:
             start_iter = it
@@ -719,8 +727,19 @@ def main(argv=None):
         else:
             tiles0 = tiles.copy()
         print(f'read {len(tiles)} tiles from {opts.tiles}' + (f', resuming at iteration {it}' if it is not None else ''))
-    elif opts.init_offsets or opts.init_lattice:
-        if opts.init_lattice:
+    elif opts.init_offsets or opts.init_lattice or opts.init_centers:
+        center_ids = None
+        if opts.init_centers:
+            import csv
+            crows = list(csv.DictReader(l for l in open(opts.init_centers) if not l.startswith('#')))
+            cxyz = radec_to_xyz(np.array([float(r['ra']) for r in crows]), np.array([float(r['dec']) for r in crows]))
+            cid = np.array([int(r['id']) if 'id' in r else i for i, r in enumerate(crows)])
+            keep = fp.contains(cxyz, extra=opts.margin) if fp is not None else np.ones(len(cxyz), bool)
+            centers, center_ids = cxyz[keep], cid[keep]
+            if 'name' in crows[0]:
+                pname = np.repeat(np.array([r['name'] for r in crows])[keep], max(1, len(opts.init_offsets.split()) if opts.init_offsets else 1))
+            print(f'{len(centers)} of {len(crows)} centres from {opts.init_centers} inside footprint + {opts.margin} deg')
+        elif opts.init_lattice:
             if not isinstance(fp, RectFootprint):
                 sys.exit('--init-lattice needs --rects')
             dra, ddec = (float(v) for v in opts.init_lattice.split(','))
@@ -734,7 +753,7 @@ def main(argv=None):
         tiles = (centers[:, None, :] + off[None, :, 0, None] * east[:, None, :] + off[None, :, 1, None] * north[:, None, :]).reshape(-1, 3)
         tiles /= np.linalg.norm(tiles, axis=1, keepdims=True)
         tiles0 = tiles.copy()
-        pid = np.repeat(np.arange(len(centers)), len(off))
+        pid = np.repeat(np.arange(len(centers)) if center_ids is None else center_ids, len(off))
         print(f'{len(tiles)} tiles = {len(centers)} pointings x {len(off)} offsets')
     else:
         if fp is None:
@@ -785,7 +804,7 @@ def main(argv=None):
                              objective=opts.objective, cv_power=opts.cv_power,
                              keep_fp=fp if opts.keep_inside is not None else None, keep_margin=opts.keep_inside or 0.0)
     opt.tiles0[:] = tiles0
-    opt.pid = pid
+    opt.pid = pid; opt.pname = pname
     if fp is not None:
         opt.interior = fp.interior(rand, opts.interior_margin) if isinstance(fp, RectFootprint) else fp.interior(rand)
     print(f'objective: {opts.objective}' + (f' (power {opts.cv_power})' if opts.objective == 'cv' else '')

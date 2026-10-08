@@ -11,7 +11,7 @@
 # data/subaru3/niji_stripes_2p8_hsc.csv: the 2.8-deg bands with the RA bounds trimmed
 # to the HSC-Niji wide footprint) against the data/subaru3 throughput model.
 #
-#   sbatch nersc/anneal_hsc_stripes.sh [POWER] [ITERS] [PREFIX] [RECTS]
+#   sbatch nersc/anneal_hsc_stripes.sh [POWER] [ITERS] [PREFIX] [RECTS] [START]
 #
 # POWER is the exponent of the rms/mean^power objective (default 1; 0 would be
 # the plain variance objective that let earlier solutions spill outside the
@@ -19,7 +19,11 @@
 # Start: a 1.299 x 1.125 deg lattice of pointing centres (the HSC-SSP Wide
 # spacing) fitted to each 5.6-deg band, x Atsushi's four phase-1 dither
 # offsets = 2548 tiles, 4 rotations each.  RECTS (default
-# data/subaru3/niji_stripes_2p8_hsc.csv) can name another rectangle file.  Output in $SCRATCH/skytiling/hsc_stripes/.
+# data/subaru3/niji_stripes_2p8_hsc.csv) can name another rectangle file.  START is
+# "lattice" (default) or a CSV of pointing centres (ra, dec, name), e.g.
+# data/subaru/hsc_niji_wide_pointings.csv to start from the HSC-SSP Wide pointings
+# that fall inside the stripes (640 centres, 2548 -> 2560 tiles; pid/pname then
+# identify the SSP pointing).  Output in $SCRATCH/skytiling/hsc_stripes/.
 set -e
 REPO=${SKYTILING_REPO:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}}   # submit from the repo root
 if [ ! -f "$REPO/bin/optimize_tiling_maps" ]; then echo "cannot find the repo at $REPO: submit from the repo root or set SKYTILING_REPO"; exit 1; fi
@@ -27,6 +31,8 @@ POWER=${1:-1}
 ITERS=${2:-300}
 PREFIX=${3:-stripes_p${POWER}_}
 RECTS=${4:-$REPO/data/subaru3/niji_stripes_2p8_hsc.csv}; [ -f "$RECTS" ] || RECTS=$REPO/$RECTS
+START=${5:-lattice}
+if [ "$START" = lattice ]; then INIT="--init-lattice 1.299,1.125"; else [ -f "$START" ] || START=$REPO/$START; INIT="--init-centers $START --margin 0"; fi
 RUNDIR=${SKYTILING_RUNDIR:-$SCRATCH/skytiling/hsc_stripes}
 mkdir -p "$RUNDIR"; cd "$RUNDIR"
 module load python
@@ -39,7 +45,7 @@ RANDOMS=$RUNDIR/randoms_$(basename "$RECTS" .csv)_4000000.fits
 if [ -f "$RANDOMS" ]; then RANDARG="--randoms $RANDOMS"; else RANDARG="--num-randoms 4000000"; fi
 $SKYTILING_PY -u "$REPO/bin/optimize_tiling_maps" -t $DATA/hsc_mbq1_throughput.fits \
     --rects "$RECTS" --interior-margin 0.75 $RANDARG \
-    --init-lattice 1.299,1.125 --init-offsets "12.2,19.5 -19.5,12.2 -12.2,-19.5 19.5,-12.2" \
+    $INIT --init-offsets "12.2,19.5 -19.5,12.2 -12.2,-19.5 19.5,-12.2" \
     --objective cv --cv-power $POWER \
     --workers $NWORK --max-drift 0.75 --moves-per-tile 4 --delta-rot 10 \
     --iters $ITERS --delta 0.1 --shrink 0.99 --seed 1 --plot --ra-center 180 --dec-center 0.68 --diameter 6 -o "$PREFIX"
