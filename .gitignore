@@ -35,3 +35,7 @@ Claude outputs/
 /hsc_atsushi2/
 /hsc_atsushi3/
 /hsc_stripes/
+
+# Overleaf clone of the DESI Run 2 imaging plan (its own git repo)
+/data/desi_run2_plan/
+/data/footprints/
