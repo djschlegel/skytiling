@@ -82,9 +82,11 @@ skytiling/            Python package
   flats_to_throughput.py  LSST-pipeline flats -> field-angle throughput/footprint maps
   eval_dither_tiling.py   coverage statistics of a hex-grid + dither + rotation tiling with those maps
   optimize_tiling_maps.py annealing optimiser for throughput-map cameras (multi-filter, rotations, footprint)
+  adjust_cross.py       change the masked/vignetted cross of a throughput-map file
 bin/                  wrappers to run the above from a source checkout
 data/cfht/            CFHT MegaCam camera file, initial tiling, final solution
-data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model
+data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model, tilings
+data/subaru2/         same with the narrower (8.18') cross and a vignetted 0.8 band
 docs/                 run notes
 nersc/                Perlmutter batch scripts and notes for the HSC runs
 ```
