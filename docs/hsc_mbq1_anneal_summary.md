@@ -71,9 +71,9 @@ each other to the third digit) the final Atsushi-start solution has interior rms
 0.348 / 0.305 / 0.298 / 0.307 and 10.4% / 5.0% / 4.9% / 6.0% below 1.5, i.e. ~3% worse than on the
 training randoms, while Atsushi's original pattern (not fitted) is unchanged at 0.42 / 0.35 / 0.36 / 0.36.
 The honest improvement is therefore 25% in rms (17–20% in rms/mean) and a factor 2.3–4 in deep holes.
-Rounding the solution changes nothing measurable: RA, Dec to 4 decimals (0.4″) and ROT to 1 decimal
-(0.1°) shift the summed rms/mean by 10⁻⁵; even 3 decimals / 0.5° rounding costs only 5 × 10⁻⁴
-(0.04%). The delivered table uses 4 decimals in RA/Dec and 1 in ROT.
+Rounding the solution changes nothing measurable: RA, Dec to 3 decimals (1.8″) and ROT to 1 decimal
+(0.1°) shift the summed rms/mean by 2 × 10⁻⁵; even 2 decimals / 0.5° rounding costs only 1.6 × 10⁻³
+(0.1%). The delivered table uses 3 decimals in RA/Dec and 1 in ROT.
 
 Files: `data/subaru/anneal/nersc_atsushi/hsc_mbq1_tiling_atsushi_final.{fits,csv}` (the rounded
 final solution: `tileid, ra, dec, rot`), `data/subaru/anneal/nersc_atsushi/tiles_{0000,0300}.fits` and
