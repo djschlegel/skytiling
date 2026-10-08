@@ -1,6 +1,6 @@
 camera: filters ['413', '439', '465', '490'], max radius 0.795 deg, area per filter [0.2606 0.2993 0.2961 0.286 ] deg^2 (THRU)
 footprint: 802 centres, radius 0.75 deg, area 1193.6 deg^2
-read 2000000 randoms from ../runA/hironao_randoms_2000000.fits
+read 2000000 randoms from ../runA/atsushi_randoms_2000000.fits
 Fibonacci lattice: 0.3742 deg^2 per tile (110229 all-sky), 3207 inside footprint + 0.0 deg margin
 expected mean coverage per filter ~ [2.776 3.188 3.154 3.046] (tiles x rotations x area / footprint area; edge tiles cover outside)
 using 2 worker process(es)

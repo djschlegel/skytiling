@@ -14,7 +14,7 @@ for dither radii up to reach - 55'.
 For each sub-filter two quantities are accumulated per sky cell:
 
 * n_obs  = number of exposures whose illuminated footprint (``GOOD_<f>``)
-           covers the cell (0/1 coverage, as in Hironao's evaluation);
+           covers the cell (0/1 coverage, as in Atsushi's evaluation);
 * depth  = sum over exposures of the relative throughput (``THRU_<f>``),
            i.e. the effective number of full-throughput exposures.
 
@@ -35,7 +35,7 @@ import numpy as np
 if __package__ in (None, ''):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-# Hironao's recommended patterns (wide_dithering/README.md), offsets in arcmin (dRA, dDec)
+# Atsushi's recommended patterns (wide_dithering/README.md), offsets in arcmin (dRA, dDec)
 PATTERNS = {
     'none': [(0.0, 0.0)],
     '4plus2_phase1': [(12.2, 19.5), (-19.5, 12.2), (-12.2, -19.5), (19.5, -12.2)],

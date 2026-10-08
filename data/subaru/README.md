@@ -52,7 +52,7 @@ CCDs under each quadrant are present (90 of the 104 science CCDs).  Points:
   reaches r = 47'.  There is no sky WCS in the flats (dome flats), and none is needed.
 * **The quadrant assignment**, in the camera's field-angle frame: 413 = top-right
   (x>0, y>0), 439 = top-left, 465 = bottom-left, 490 = bottom-right.  This matches
-  `obscuration.QUADRANT_FILTERS` in Hironao's repo (which notes the names were
+  `obscuration.QUADRANT_FILTERS` in the hsc-niji-survey repo (which notes the names were
   "assigned by quadrant earlier and have not been checked against the instrument").
   The handedness of the (x, y) frame on the sky (which way is East at PA = 0) is
   not pinned down here; for a 4-rotation strategy it only mirrors the pattern.
@@ -93,7 +93,7 @@ CCDs under each quadrant are present (90 of the 104 science CCDs).  Points:
 * Illuminated area per sub-filter: 413 0.271 deg², 439 0.302, 465 0.301,
   490 0.291 (sum 1.165 deg² of the ~1.5 deg² HSC field).
 
-## Hironao's `wide_dithering` (hsc-niji-survey/wide-observing-strategy)
+## Atsushi's `wide_dithering` (hsc-niji-survey/wide-observing-strategy)
 
 Dither-pattern study for the same filter: HSC-SSP hex grid of pointings
 (77.5' x 67.5'), each pointing observed at 4 PAs, with a small dither pattern
@@ -105,7 +105,7 @@ skytiling approach differs in optimising the global pointing positions on a
 Fibonacci lattice for uniform coverage, and (here) in using the measured
 masks/throughput instead of a model cross.
 
-## Hironao's 4+2 pattern evaluated with the measured maps
+## Atsushi's 4+2 pattern evaluated with the measured maps
 
 `eval_dither_tiling -t hsc_mbq1_throughput.fits --pattern 4plus2 --plot hsc_mbq1_eval_4plus2.png`
 replicates the `wide_dithering` evaluation (hex grid 77.5' x 67.5', the same
@@ -118,7 +118,7 @@ footprint, not the evaluator.  Mean over the four sub-filters, 0.2' cells:
 
 | footprint | area / quadrant | phase 1: mean n, rms/mean, n<=1, union n<=1 | phase 1+2: mean n, rms/mean, n<=1, union n<=1 |
 |---|---|---|---|
-| Hironao model (8.18' cross) | 0.391 deg² | 4.30, 0.25, 0.5%, 1.6% | 6.46, 0.20, 0.00%, 0.01% |
+| Atsushi model (8.18' cross) | 0.391 deg² | 4.30, 0.25, 0.5%, 1.6% | 6.46, 0.20, 0.00%, 0.01% |
 | + 10.4' cross as in the flats | 0.367 | 4.04, 0.29, 1.6%, 4.1% | 6.06, 0.22, 0.03%, 0.1% |
 | + vignetted edge r > 46.5' masked | 0.308 | 3.39, 0.34, 5.8%, 10.6% | 5.09, 0.25, 0.24%, 0.8% |
 | + dead amps / missing 413 CCDs (= `GOOD` maps) | 0.291 | 3.20, 0.37, 7.8%, 17.0% | 4.80, 0.28, 0.64%, 2.2% |
@@ -128,13 +128,13 @@ rms/mean 0.32, n <= 1 1.2%) because of its two missing CCDs; 439/465/490
 have mean 4.8-5.0 and n <= 1 0.3-0.6%.  Weighting by `THRU` instead of 0/1
 lowers the mean depth by 2-4% and changes the uniformity negligibly, since
 the maps are ~1 over the bulk.  The masked field edge is the single largest
-difference from Hironao's model (it removes 15% of the area), then the wider
+difference from Atsushi's model (it removes 15% of the area), then the wider
 cross, then the dead amplifiers.  `hsc_mbq1_eval_4plus2.png` shows the
 coverage maps.
 
 ### Phase 1 only (4 dithers), and tighter grids
 
-Hironao's pointing list (`pointing/hsc_pointing_list_coadd_dr4_FCunique.csv`)
+Atsushi's pointing list (`pointing/hsc_pointing_list_coadd_dr4_FCunique.csv`)
 is not an all-sky tiling: it is the 802 HSC-SSP Wide pointings at
 -6° < Dec < +6.4° (~1165 deg²), on rows 67.5' apart with a *fixed* RA step
 of 1.299° (77.5' x cos Dec on the sky, so the spacing is only right near the
@@ -166,14 +166,14 @@ than a scaled lattice.
 well, `--delta-rot`) to minimise the summed per-sub-filter coverage variance over
 2M randoms inside the footprint (0.75° discs around the 802 wide pointings,
 1194 deg²), with each sub-filter's `THRU` map.  Run with the same 3208 tiles
-as Hironao's phase 1 (4 dithers x 802 pointings), 40 iterations, step sigma
+as Atsushi's phase 1 (4 dithers x 802 pointings), 40 iterations, step sigma
 0.1° shrinking by 0.96 per iteration, best of 3 proposals per tile, max drift
 1°, no Metropolis temperature:
 
 ```
 optimize_tiling_maps -t hsc_mbq1_throughput.fits --footprint hsc_niji_wide_pointings.csv \
     --init-offsets "12.2,19.5 -19.5,12.2 -12.2,-19.5 19.5,-12.2" --num-randoms 2000000 \
-    --iters 40 --delta 0.1 --shrink 0.96 --max-drift 1.0 --moves-per-tile 3 --plot -o hironao_
+    --iters 40 --delta 0.1 --shrink 0.96 --max-drift 1.0 --moves-per-tile 3 --plot -o atsushi_
 ```
 
 Interior of the footprint (68% of the randoms, away from the stripe edges),
@@ -181,7 +181,7 @@ coverage = sum of throughput:
 
 | | 413 mean, rms/mean, <1.5, <0.5 | 439 | 465 | 490 |
 |---|---|---|---|---|
-| Hironao phase 1 (start) | 2.83, 0.42, 12.9%, 2.0% | 3.23, 0.35, 6.5%, 0.8% | 3.22, 0.36, 7.4%, 1.1% | 3.10, 0.35, 7.6%, 0.9% |
+| Atsushi phase 1 (start) | 2.83, 0.42, 12.9%, 2.0% | 3.23, 0.35, 6.5%, 0.8% | 3.22, 0.36, 7.4%, 1.1% | 3.10, 0.35, 7.6%, 0.9% |
 | annealed, iteration 40 | 2.61, 0.35, 10.4%, 0.9% | 3.01, 0.31, 5.0%, 0.3% | 2.97, 0.30, 4.8%, 0.2% | 2.87, 0.31, 5.9%, 0.3% |
 | Fibonacci start, 3207 tiles inside the footprint (no margin) | 2.77, 0.39, 9.6%, 0.7% | 3.19, 0.34, 4.6%, 0.3% | 3.15, 0.37, 7.4%, 0.6% | 3.05, 0.34, 5.8%, 0.8% |
 | Fibonacci start, annealed, iteration 40 | 2.57, 0.36, 10.9%, 0.9% | 2.96, 0.32, 5.4%, 0.3% | 2.92, 0.31, 5.3%, 0.3% | 2.83, 0.32, 6.5%, 0.4% |
@@ -196,7 +196,7 @@ improve it further.  With the same number of tiles placed inside the footprint,
 the un-annealed Fibonacci lattice is already slightly more uniform than the
 phase-1 dither pattern, and after annealing the two starts converge to
 essentially the same quality (rms/mean 0.36 / 0.31-0.32), so the result is
-set by the footprint and tile density rather than the starting layout.  `hsc_anneal_from_{hironao4,fibonacci}_tiles_0040.fits` hold the annealed
+set by the footprint and tile density rather than the starting layout.  `hsc_anneal_from_{atsushi4,fibonacci}_tiles_0040.fits` hold the annealed
 centres (`ra, dec`) with the starting positions (`ra0, dec0`); the PNGs show
 the coverage around (RA, Dec) = (180, 0) before and after.
 
@@ -211,11 +211,11 @@ see `docs/hsc_mbq1_anneal_summary.md` (and `.pdf`) for the write-up with
 figures.
 
 Longer runs on a Perlmutter node: `nersc/anneal_hsc_fibonacci.sh`,
-`nersc/anneal_hsc_hironao.sh` (see `nersc/README.md`).
+`nersc/anneal_hsc_atsushi.sh` (see `nersc/README.md`).
 
 ## Next steps
 
-1. Confirm with Hironao: the missing 413 CCDs, the ~10.4' cross width, and
+1. Confirm with Atsushi: the missing 413 CCDs, the ~10.4' cross width, and
    that the illumination-gradient assumption above is reasonable.
 2. Extend `optimize_tiling` to (a) take the throughput maps instead of CCD
    polygons, (b) rotate each pointing's footprint by the 4 PAs, and (c)

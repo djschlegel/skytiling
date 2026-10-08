@@ -28,7 +28,7 @@ to submit from elsewhere set `SKYTILING_REPO=/path/to/skytiling`):
 
 ```
 sbatch nersc/anneal_hsc_fibonacci.sh        # Fibonacci start, 3208 tiles, 300 iterations
-sbatch nersc/anneal_hsc_hironao.sh          # Hironao phase-1 start, same tile count
+sbatch nersc/anneal_hsc_atsushi.sh          # Atsushi phase-1 start, same tile count
 ```
 
 Output goes to `$SCRATCH/skytiling/hsc_fib/` (`fib_tiles_NNNN.fits`,

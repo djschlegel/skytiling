@@ -31,3 +31,4 @@ Claude outputs/
 
 # local copies of NERSC run directories (checkpoints every iteration, randoms)
 /hsc_fib/
+/hsc_atsushi/

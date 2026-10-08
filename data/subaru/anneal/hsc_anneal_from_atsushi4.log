@@ -1,6 +1,6 @@
 camera: filters ['413', '439', '465', '490'], max radius 0.795 deg, area per filter [0.2606 0.2993 0.2961 0.286 ] deg^2 (THRU)
 footprint: 802 centres, radius 0.75 deg, area 1193.6 deg^2
-generated 2000000 randoms in the footprint -> hironao_randoms_2000000.fits
+generated 2000000 randoms in the footprint -> atsushi_randoms_2000000.fits
 3208 tiles = 802 pointings x 4 offsets
 expected mean coverage per filter ~ [2.784 3.197 3.163 3.054] (tiles x rotations x area / footprint area; edge tiles cover outside)
 [timing] candidate sets in 9.7 s; mean 15045 randoms per tile

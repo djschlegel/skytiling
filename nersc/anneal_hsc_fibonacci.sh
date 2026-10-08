@@ -10,7 +10,7 @@
 #
 # Anneal an HSC MBQ1 tiling of the HSC-Niji wide footprint on one Perlmutter
 # CPU node, starting from a Fibonacci lattice with the same number of tiles
-# as Hironao's phase-1 pattern (4 dithers x 802 pointings = 3208).
+# as Atsushi's phase-1 pattern (4 dithers x 802 pointings = 3208).
 #
 # Usage:  sbatch nersc/anneal_hsc_fibonacci.sh            (from the repo root)
 #         sbatch nersc/anneal_hsc_fibonacci.sh fib_tiles_0100.fits   (resume)

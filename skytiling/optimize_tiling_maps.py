@@ -460,7 +460,7 @@ def parse_arguments(argv=None):
     p.add_argument('--ntiles', type=int, help='number of Fibonacci tiles over footprint+margin')
     p.add_argument('--tilearea', type=float, help='Fibonacci tile area [deg^2] (alternative to --ntiles)')
     p.add_argument('--init-offsets', help='start from the footprint pointings with these dither offsets '
-                                           '"dx,dy dx,dy ..." [arcmin, +x = +RA]; e.g. Hironao phase 1')
+                                           '"dx,dy dx,dy ..." [arcmin, +x = +RA]; e.g. Atsushi phase 1')
     p.add_argument('--max-drift', type=float, default=1.0, help='max drift from initial position [deg]')
     p.add_argument('--delta', type=float, default=0.1, help='position proposal sigma [deg]')
     p.add_argument('--delta-rot', type=float, default=0.0,
