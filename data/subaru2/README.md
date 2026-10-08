@@ -51,6 +51,9 @@ The narrower cross helps every tiling (the mean rises 5-6% and the holes
 shrink), and it helps Atsushi's regular pattern more than the annealed one —
 the cross band is exactly where his dithers leave gaps — but the annealed
 tiling remains ahead: rms/mean 0.33 / 0.29 / 0.29 / 0.29 vs 0.38 / 0.32 /
-0.33 / 0.32, with ~15-25% fewer holes.  A tiling annealed against the
-`subaru2` maps themselves (`optimize_tiling_maps -t data/subaru2/hsc_mbq1_throughput.fits ...`)
-should do a little better still.
+0.33 / 0.32, with ~15-25% fewer holes.  The tiling re-annealed against the
+`subaru2` maps (`anneal/nersc_atsushi2/`, 200 iterations from the `subaru`
+solution) gains a further ~1.5%: interior rms/mean 0.33 / 0.29 / 0.28 / 0.29 on
+independent randoms.  **`anneal/nersc_atsushi2/hsc_mbq1_tiling_subaru2_final.{fits,csv}`
+is the adopted tiling for this model**; see
+`docs/hsc_mbq1_anneal_summary_subaru2.md` for the write-up.
