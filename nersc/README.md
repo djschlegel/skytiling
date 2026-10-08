@@ -89,11 +89,12 @@ sbatch nersc/anneal_hsc_stripes.sh 1      # rms/mean objective
 sbatch nersc/anneal_hsc_stripes.sh 2      # rms/mean^2: pulls tiles in harder
 ```
 
-anneals a lattice + dither start (2548 tiles) over `data/subaru3/niji_stripes_2p8_hsc.csv`
-(the Niji stripes with their RA bounds trimmed to the HSC-Niji wide footprint; a fourth
+anneals a lattice + dither start (2696 tiles) over `data/subaru3/niji_stripes_2p8_hsc.csv`
+(the Niji stripes with their RA bounds trimmed to the HSC-Niji wide footprint, plus the
+southern SGC block as SGC-3/4; a fourth
 argument names another rectangle file, e.g. `niji_stripes_2p8.csv` for the untrimmed DESI bounds,
 and a fifth replaces the lattice start with a pointing-centre CSV, e.g.
-`data/subaru/hsc_niji_wide_pointings.csv` to start from the 640 HSC-SSP Wide pointings inside the stripes)
+`data/subaru/hsc_niji_wide_pointings.csv` to start from the 680 HSC-SSP Wide pointings inside the stripes)
 against the `data/subaru3` model, 300 iterations (`--objective cv`, see
 `data/subaru3/README.md`); output `$SCRATCH/skytiling/hsc_stripes/stripes_p<p>_tiles_NNNN.fits`
 with a `pid` (pointing id) column.  Both runs share the randoms file written by the first.

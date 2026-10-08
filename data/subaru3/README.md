@@ -99,10 +99,11 @@ with the HSC-SSP Wide spacing, fitted to each band (5 rows per 5.6-deg band,
 1.12 deg apart, with the number of columns rounded so the lattice is centred
 in each row's RA extent), and `--init-offsets` adds Atsushi's four dithers:
 1.45 deg² per centre as in his layout (784 centres / 3136 tiles on the DESI bounds,
-637 / 2548 on the trimmed stripes).  Alternatively `--init-centers
+674 / 2696 on the adopted footprint).  Alternatively `--init-centers
 ../subaru/hsc_niji_wide_pointings.csv --margin 0` starts from the HSC-SSP Wide
-pointings themselves, keeping the 640 whose centres fall inside the trimmed stripes
-(five rows per band in each cap, e.g. Dec -1.3, -0.18, 0.95, 2.08, 3.2 in the NGC): the
+pointings themselves, keeping the 680 whose centres fall inside the adopted footprint
+(five rows per 5.6-deg band, e.g. Dec -1.3, -0.18, 0.95, 2.08, 3.2 in the NGC and
+-6.02 ... -1.52 in the southern SGC block): the
 two starts have the same density and, with the four dithers, the same coverage
 statistics to within 1-2% (lattice: 6.1% of the coverage outside the footprint, inside
 rms/mean 0.39 / 0.34 / 0.35 / 0.34; SSP pointings: 6.7%, 0.40 / 0.34 / 0.35 / 0.35 — the
@@ -140,7 +141,8 @@ footprint (not needed in this test: no centre got that far).
 HSC-Niji wide pointings (HSC-SSP Wide DR4 full-colour pointings, Atsushi's
 footprint).  Of the stripes' 1135 deg², 905 lie inside those cells and 230 outside;
 266 deg² of the HSC footprint (its top row in the NGC at Dec 3.5-5.1, and the SGC
-area at Dec > 4.7 and the block at RA 30-39, Dec -2 to -6) is not in any stripe.
+area at Dec > 4.7 and the block at RA 30-39, Dec -2 to -6) is not in any DESI Niji stripe
+(208 deg² once the southern block is added as SGC-3/4 below).
 Per stripe (deg², and the RA / Dec extent of the HSC cells within the stripe's Dec band):
 
 | stripe | area | inside HSC | outside HSC | HSC RA extent | HSC Dec extent |
@@ -155,14 +157,19 @@ NGC-6 2 deg, and the SGC stripes extend 16 deg below and 5-8 deg above it.  In D
 NGC band fits the HSC rows well (its bottom edge at -2.12 runs along the zig-zag bottom of
 the lowest row of cells, so a 0.4-deg strip there is only half covered); the SGC band
 sits inside the HSC Dec range.  **`niji_stripes_2p8_hsc.csv` — the adopted footprint —** is the same four stripes with
-the RA bounds trimmed to the HSC extent (NGC 128.0-226.0, SGC 330.2-39.7): 937 deg², of
-which 905 inside HSC and 32 outside (the NGC-6 bottom strip); 637 lattice centres, 2548
-tiles with Atsushi's four dithers.  `niji_stripes_hsc_vs_hsc.png` is the same overlay for the
-trimmed stripes.
+the RA bounds trimmed to the HSC extent (NGC 128.0-226.0, SGC 330.2-39.7), plus the
+southern extension of the HSC SGC area (the block of 5 x 8 pointings at RA 29.3-39.1,
+Dec -6.0 to -1.5) taken as two further 2.8-deg stripes, SGC-3 and SGC-4, down to
+Dec -6.51 at RA 28.7-39.7: 999 deg², of which 963 inside HSC and 36 outside (mostly
+the NGC-6 bottom strip); 674 lattice centres, 2696 tiles with Atsushi's four dithers
+(or 680 SSP pointings, 2720 tiles).  `niji_stripes_hsc_vs_hsc.png` is the overlay for
+this footprint.
 
-| stripe (trimmed) | RA | Dec (2.8-deg band) | area deg² |
-|---|---|---|---|
-| NGC-5 | 128.0-226.0 | 0.68-3.48 | 274.2 |
-| NGC-6 | 128.0-226.0 | -2.12-0.68 | 274.4 |
-| SGC-1 | 330.2-39.7 | 1.89-4.69 | 194.3 |
-| SGC-2 | 330.2-39.7 | -0.91-1.89 | 194.6 |
+| stripe (adopted) | RA | Dec (2.8-deg band) | area deg² | inside HSC |
+|---|---|---|---|---|
+| NGC-5 | 128.0-226.0 | 0.68-3.48 | 274.2 | 272.5 |
+| NGC-6 | 128.0-226.0 | -2.12-0.68 | 274.4 | 249.7 |
+| SGC-1 | 330.2-39.7 | 1.89-4.69 | 194.3 | 191.2 |
+| SGC-2 | 330.2-39.7 | -0.91-1.89 | 194.6 | 191.6 |
+| SGC-3 | 28.7-39.7 | -3.71 to -0.91 | 30.8 | 29.0 |
+| SGC-4 | 28.7-39.7 | -6.51 to -3.71 | 30.7 | 28.8 |

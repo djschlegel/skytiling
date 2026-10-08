@@ -1,7 +1,11 @@
-# As niji_stripes_2p8.csv but with the RA bounds trimmed to the extent of the HSC-Niji wide pointings' hex cells
-# (NGC: RA 128.0-226.0; SGC: RA 330.2-39.7), so that the stripes lie inside the existing HSC-SSP footprint.
+# The HSC-Niji + VST stripes of the DESI Run 2 imaging plan (Table 2) as the unique 2.8-deg Dec band of
+# each stripe (dec_center +- 1.4), with the RA bounds trimmed to the extent of the HSC-Niji wide pointings'
+# hex cells (NGC: RA 128.0-226.0; SGC: RA 330.2-39.7), plus the southern extension of the HSC SGC area
+# (RA 28.7-39.7, Dec -6.51 to -0.91) as two further stripes SGC-3 and SGC-4.  The adopted footprint.
 name,ra_min,ra_max,dec_min,dec_max
 NGC-5,128.0,226.0,0.68,3.48
 NGC-6,128.0,226.0,-2.12,0.68
 SGC-1,330.2,39.7,1.89,4.69
 SGC-2,330.2,39.7,-0.91,1.89
+SGC-3,28.7,39.7,-3.71,-0.91
+SGC-4,28.7,39.7,-6.51,-3.71

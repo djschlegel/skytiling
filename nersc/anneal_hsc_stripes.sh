@@ -9,7 +9,7 @@
 #SBATCH -o hsc_stripes_%j.out
 # Anneal an HSC MBQ1 tiling of the DESI Run 2 Niji stripes (rectangular footprint,
 # data/subaru3/niji_stripes_2p8_hsc.csv: the 2.8-deg bands with the RA bounds trimmed
-# to the HSC-Niji wide footprint) against the data/subaru3 throughput model.
+# to the HSC-Niji wide footprint, plus its southern SGC block as SGC-3/4) against the data/subaru3 throughput model.
 #
 #   sbatch nersc/anneal_hsc_stripes.sh [POWER] [ITERS] [PREFIX] [RECTS] [START]
 #
@@ -18,11 +18,11 @@
 # footprint), ITERS defaults to 300, PREFIX to stripes_p<POWER>_.
 # Start: a 1.299 x 1.125 deg lattice of pointing centres (the HSC-SSP Wide
 # spacing) fitted to each 5.6-deg band, x Atsushi's four phase-1 dither
-# offsets = 2548 tiles, 4 rotations each.  RECTS (default
+# offsets = 2696 tiles, 4 rotations each.  RECTS (default
 # data/subaru3/niji_stripes_2p8_hsc.csv) can name another rectangle file.  START is
 # "lattice" (default) or a CSV of pointing centres (ra, dec, name), e.g.
 # data/subaru/hsc_niji_wide_pointings.csv to start from the HSC-SSP Wide pointings
-# that fall inside the stripes (640 centres, 2548 -> 2560 tiles; pid/pname then
+# that fall inside the stripes (680 centres, 2720 tiles; pid/pname then
 # identify the SSP pointing).  Output in $SCRATCH/skytiling/hsc_stripes/.
 set -e
 REPO=${SKYTILING_REPO:-${SLURM_SUBMIT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}}   # submit from the repo root
