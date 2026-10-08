@@ -1,0 +1,7 @@
+# As niji_stripes_2p8.csv but with the RA bounds trimmed to the extent of the HSC-Niji wide pointings' hex cells
+# (NGC: RA 128.0-226.0; SGC: RA 330.2-39.7), so that the stripes lie inside the existing HSC-SSP footprint.
+name,ra_min,ra_max,dec_min,dec_max
+NGC-5,128.0,226.0,0.68,3.48
+NGC-6,128.0,226.0,-2.12,0.68
+SGC-1,330.2,39.7,1.89,4.69
+SGC-2,330.2,39.7,-0.91,1.89

@@ -75,8 +75,9 @@ two tilings are now much closer than under the earlier models (rms/mean
 0.36 / 0.29 / 0.30 / 0.30 vs 0.32 / 0.29 / 0.28 / 0.29; the annealed tiling
 still has lower absolute rms in every sub-filter, but its mean inside the
 interior is 8% lower because its tiles were pulled outward to cover the
-footprint edges).  The tiling is re-annealed against this model in
-`anneal/nersc_atsushi3/` (`nersc/anneal_hsc_resume.sh`).
+footprint edges).  The tiling re-annealed against this model (`anneal/nersc_atsushi3/`,
+`nersc/anneal_hsc_resume.sh`, 200 iterations) gains a further 0.7%: interior rms/mean
+0.32 / 0.28 / 0.28 / 0.29; see `docs/hsc_mbq1_anneal_summary_subaru3.md`.
 
 ## Rectangular footprint: the DESI Run 2 Niji stripes
 
@@ -122,3 +123,27 @@ rms/mean, which now includes a steeper edge roll-off.  `--keep-inside d`
 additionally rejects moves that take a tile centre more than d deg beyond the
 footprint (not needed in this test: no centre got that far).
 `nersc/anneal_hsc_stripes.sh [p]` runs the full four-stripe problem.
+
+### How the stripes compare with the HSC-Niji wide footprint
+
+`niji_stripes_vs_hsc.png` overlays the stripes on the hex cells of the 802
+HSC-Niji wide pointings (HSC-SSP Wide DR4 full-colour pointings, Atsushi's
+footprint).  Of the stripes' 1135 deg², 905 lie inside those cells and 230 outside;
+266 deg² of the HSC footprint (its top row in the NGC at Dec 3.5-5.1, and the SGC
+area at Dec > 4.7 and the block at RA 30-39, Dec -2 to -6) is not in any stripe.
+Per stripe (deg², and the RA / Dec extent of the HSC cells within the stripe's Dec band):
+
+| stripe | area | inside HSC | outside HSC | HSC RA extent | HSC Dec extent |
+|---|---|---|---|---|---|
+| NGC-5 | 345 | 273 | 72 | 128.0-226.0 | 0.72-3.47 |
+| NGC-6 | 280 | 250 | 31 | 128.2-226.0 | -2.03-0.67 |
+| SGC-1 | 248 | 191 | 57 | 330.2-39.7 | 1.92-4.67 |
+| SGC-2 | 261 | 192 | 70 | 330.2-39.7 | -0.88-1.87 |
+
+The excess is almost all in RA: NGC-5 runs 24 deg past the HSC data at the high-RA end,
+NGC-6 2 deg, and the SGC stripes extend 16 deg below and 5-8 deg above it.  In Dec the
+NGC band fits the HSC rows well (its bottom edge at -2.12 runs along the zig-zag bottom of
+the lowest row of cells, so a 0.4-deg strip there is only half covered); the SGC band
+sits inside the HSC Dec range.  `niji_stripes_2p8_hsc.csv` is the same four stripes with
+the RA bounds trimmed to the HSC extent (NGC 128.0-226.0, SGC 330.2-39.7): 937 deg², of
+which 905 inside HSC and 32 outside (the NGC-6 bottom strip); 637 lattice centres.
