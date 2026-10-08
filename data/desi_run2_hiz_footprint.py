@@ -148,7 +148,7 @@ if __name__ == '__main__':
                Patch(facecolor='#f2a65a', alpha=0.85, label=f'IBIS+POLU stripes ({ibis_base:,.0f} deg$^2$)'),
                Patch(facecolor='#f2a65a', alpha=0.45, hatch='////', edgecolor='#b06d1f', label=f'possible extensions ({ibis_ext:,.0f} deg$^2$)'),
                Patch(facecolor='#5aa469', alpha=0.85, label=f'HSC-Niji+VST stripes ({niji:,.0f} deg$^2$)'),
-               Line2D([], [], color='r', lw=1.2, label=f'High-z Dark Energy Survey ({ibis_base + niji_own:,.0f} deg$^2$; {ibis_base + ibis_ext + niji_own:,.0f} with extensions)')]
+               Line2D([], [], color='r', lw=1.2, label=f'Imaging footprint = High-z Dark Energy Survey ({ibis_base + niji_own:,.0f} deg$^2$; {ibis_base + ibis_ext + niji_own:,.0f} with extensions)')]
     ax.legend(handles=handles, loc='lower center', fontsize=8, framealpha=0.95, ncol=2, bbox_to_anchor=(0.5, -0.22))
     plt.tight_layout(); plt.savefig('hiz_footprint.png', dpi=150); plt.savefig('hiz_footprint.pdf')
     # zoom panels in RA/Dec for the stripes themselves
