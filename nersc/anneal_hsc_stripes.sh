@@ -31,8 +31,9 @@ POWER=${1:-1}
 ITERS=${2:-300}
 PREFIX=${3:-stripes_p${POWER}_}
 RECTS=${4:-$REPO/data/subaru3/niji_stripes_2p8_hsc.csv}; [ -f "$RECTS" ] || RECTS=$REPO/$RECTS
+RECTS=$(realpath "$RECTS")          # absolute: the run happens in $RUNDIR, not the repo
 START=${5:-lattice}
-if [ "$START" = lattice ]; then INIT="--init-lattice 1.299,1.125"; else [ -f "$START" ] || START=$REPO/$START; INIT="--init-centers $START --margin 0"; fi
+if [ "$START" = lattice ]; then INIT="--init-lattice 1.299,1.125"; else [ -f "$START" ] || START=$REPO/$START; START=$(realpath "$START"); INIT="--init-centers $START --margin 0"; fi
 RUNDIR=${SKYTILING_RUNDIR:-$SCRATCH/skytiling/hsc_stripes}
 mkdir -p "$RUNDIR"; cd "$RUNDIR"
 module load python

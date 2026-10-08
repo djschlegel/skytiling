@@ -307,6 +307,8 @@ def parse_rects(spec):
         rows = list(csv.DictReader(l for l in open(spec) if not l.startswith('#')))
         rects = [(r['ra_min'], r['ra_max'], r['dec_min'], r['dec_max']) for r in rows]
         names = [r.get('name', f'rect{i}') for i, r in enumerate(rows)]
+    elif spec.endswith('.csv') or '/' in spec:
+        sys.exit(f'--rects: file not found: {spec} (relative to {os.getcwd()})')
     else:
         rects = [tuple(v for v in part.split(',')) for part in spec.split(';') if part.strip()]
         names = None
