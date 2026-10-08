@@ -10,7 +10,8 @@ res=0.05
 ra=np.arange(0,360,res)+res/2; dec=np.arange(-23,17,res)+res/2; RA,DEC=np.meshgrid(ra,dec)
 union=np.zeros(RA.shape,bool)
 for s in stripes: union|=in_rect(RA,DEC,s)
-ebv=np.full(RA.shape,np.nan,np.float32); ebv[union]=sfd_ebv(RA[union],DEC[union])
+ebv_all=sfd_ebv(RA.ravel(),DEC.ravel()).reshape(RA.shape)      # the whole panel area
+ebv=np.where(union, ebv_all, np.nan)
 cell=np.radians(res)**2*np.cos(np.radians(DEC))*(180/np.pi)**2
 print('%-16s %7s %6s %6s %6s | area > 0.05 / 0.10 / 0.15 / 0.20 [deg2]'%('stripe','area','median','mean','p90'))
 tot=np.zeros(5)
@@ -22,16 +23,24 @@ for s in stripes:
 print('baseline total    %7.1f                       | %6.1f %6.1f %6.1f %6.1f'%tuple(tot))
 e=ebv[union]; w=cell[union]
 for t in (0.05,0.08,0.10,0.15,0.20): print('whole footprint: area with E(B-V) > %.2f: %6.1f deg2 (%.1f%%)'%(t,(w*(e>t)).sum(),100*(w*(e>t)).sum()/w.sum()))
+# galactic latitude of the grid, for the |b| = 20 deg lines
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+gb = SkyCoord(ra=RA.ravel()*u.deg, dec=DEC.ravel()*u.deg).galactic.b.deg.reshape(RA.shape)
 np.save('ebv_grid.npy', dict(RA=RA,DEC=DEC,ebv=ebv,union=union), allow_pickle=True)
 fig, axes = plt.subplots(2, 1, figsize=(14, 7.2))
 for ax,(lab,lo,hi) in zip(axes,(('NGC',115,260),('SGC',295,440))):
     cols=np.where((ra>=lo)&(ra<=hi))[0] if lab=='NGC' else np.r_[np.where(ra>=295)[0], np.where(ra<=80)[0]]
-    sub=ebv[:,cols]
+    sub=ebv_all[:,cols]; usub=union[:,cols].astype(float); bsub=gb[:,cols]
     im=ax.imshow(sub, origin='lower', extent=[lo,hi,-23,17], aspect='auto', cmap='magma_r', vmin=0, vmax=0.2, interpolation='nearest')
     x=np.linspace(lo,hi,sub.shape[1]); y=np.linspace(-23,17,sub.shape[0])
-    ax.contour(x,y,np.where(np.isnan(sub),0,sub),levels=[0.1],colors='c',linewidths=0.5)
+    ax.contour(x,y,np.where(usub>0.5,sub,0),levels=[0.1],colors='c',linewidths=0.5)
+    ax.contour(x,y,usub,levels=[0.5],colors='k',linewidths=2.0)
+    ax.contour(x,y,bsub,levels=[-20,20],colors='w',linewidths=1.2,linestyles='--')
+    ax.contour(x,y,bsub,levels=[-20,20],colors='k',linewidths=0.4,linestyles='--')
     ax.set_xlim(hi,lo); ax.set_ylim(-23,17); ax.grid(alpha=0.3)
     ticks=np.arange(lo,hi+1,15); ax.set_xticks(ticks); ax.set_xticklabels([f'{t%360:g}' for t in ticks])
-    ax.set_xlabel('R.A. [deg]'); ax.set_ylabel('Dec. [deg]'); ax.set_title(f'{lab}: SFD E(B-V) inside the High-z stripes (cyan contour: E(B-V) = 0.1)', fontsize=10)
+    ax.set_xlabel('R.A. [deg]'); ax.set_ylabel('Dec. [deg]')
+    ax.set_title(f'{lab}: SFD E(B-V); thick line: High-z Dark Energy Survey footprint; cyan: E(B-V) = 0.1 inside it; dashed: Galactic latitude b = ±20°', fontsize=10)
     plt.colorbar(im, ax=ax, fraction=0.02, pad=0.01, label='E(B-V)')
 plt.tight_layout(); plt.savefig('hiz_stripes_ebv.png', dpi=130); plt.savefig('hiz_stripes_ebv.pdf', dpi=150); print('ok')
