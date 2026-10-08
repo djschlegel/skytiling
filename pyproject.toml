@@ -25,6 +25,7 @@ flats_to_throughput = "skytiling.flats_to_throughput:main"
 eval_dither_tiling = "skytiling.eval_dither_tiling:main"
 optimize_tiling_maps = "skytiling.optimize_tiling_maps:main"
 adjust_cross = "skytiling.adjust_cross:main"
+plot_throughput = "skytiling.plot_throughput:main"
 
 [project.urls]
 Homepage = "https://github.com/djschlegel/skytiling"  # update to the actual GitHub URL

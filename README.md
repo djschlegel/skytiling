@@ -83,10 +83,12 @@ skytiling/            Python package
   eval_dither_tiling.py   coverage statistics of a hex-grid + dither + rotation tiling with those maps
   optimize_tiling_maps.py annealing optimiser for throughput-map cameras (multi-filter, rotations, footprint)
   adjust_cross.py       change the masked/vignetted cross of a throughput-map file
+  plot_throughput.py    one page per sub-filter of a throughput-map file, optionally vs another file
 bin/                  wrappers to run the above from a source checkout
 data/cfht/            CFHT MegaCam camera file, initial tiling, final solution
 data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model, tilings
 data/subaru2/         same with the narrower (8.18') cross and a vignetted 0.8 band
+data/subaru3/         measured 8.18' model from Hironao's rebuilt flats (centre CCDs included)
 docs/                 run notes
 nersc/                Perlmutter batch scripts and notes for the HSC runs
 ```

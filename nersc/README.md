@@ -49,6 +49,23 @@ continues from that checkpoint (the iteration counter continues from the
 file name; `ra0, dec0` in the file keep the original drift reference) with a
 smaller step.
 
+## Re-anneal against a new throughput model
+
+```
+sbatch nersc/anneal_hsc_resume.sh data/subaru3 data/subaru2/anneal/nersc_atsushi2/tiles_0200.fits atsushi3_ 200
+```
+
+(those are the defaults, so `sbatch nersc/anneal_hsc_resume.sh` alone does the
+same) copies the start file to `$SCRATCH/skytiling/hsc_atsushi3/atsushi3_tiles_0000.fits`
+and anneals it against `data/subaru3/hsc_mbq1_throughput.fits` for 200
+iterations with the smaller steps (`--delta 0.05 --delta-rot 5`), reusing the
+4M randoms of the first run if `$SCRATCH/skytiling/hsc_fib/fib_randoms_4000000.fits`
+exists.  The iteration counter restarts at 0 but `ra0, dec0` — and so the
+0.75 deg drift cap from Atsushi's original positions — carry over.  About 20
+minutes on one node.  When done, copy `atsushi3_tiles_0000.fits`,
+`atsushi3_tiles_0200.fits` and the Slurm log's iteration lines into
+`data/subaru3/anneal/nersc_atsushi3/`.
+
 ## Tuning
 
 * `--delta` / `--shrink`: proposal sigma [deg] and its per-iteration decay.
