@@ -159,6 +159,42 @@ little worse than 4+2 on every metric.  Improving uniformity beyond this needs
 the pointing positions themselves optimised (the skytiling approach) rather
 than a scaled lattice.
 
+## Annealing on the HSC-Niji footprint (`data/subaru/anneal/`)
+
+`optimize_tiling_maps` moves the tile centres (each observed at PA
+0/90/180/270) to minimise the summed per-sub-filter coverage variance over
+2M randoms inside the footprint (0.75° discs around the 802 wide pointings,
+1194 deg²), with each sub-filter's `THRU` map.  Run with the same 3208 tiles
+as Hironao's phase 1 (4 dithers x 802 pointings), 40 iterations, step sigma
+0.1° shrinking by 0.96 per iteration, best of 3 proposals per tile, max drift
+1°, no Metropolis temperature:
+
+```
+optimize_tiling_maps -t hsc_mbq1_throughput.fits --footprint hsc_niji_wide_pointings.csv \
+    --init-offsets "12.2,19.5 -19.5,12.2 -12.2,-19.5 19.5,-12.2" --num-randoms 2000000 \
+    --iters 40 --delta 0.1 --shrink 0.96 --max-drift 1.0 --moves-per-tile 3 --plot -o hironao_
+```
+
+Interior of the footprint (68% of the randoms, away from the stripe edges),
+coverage = sum of throughput:
+
+| | 413 mean, rms/mean, <1.5, <0.5 | 439 | 465 | 490 |
+|---|---|---|---|---|
+| Hironao phase 1 (start) | 2.83, 0.42, 12.9%, 2.0% | 3.23, 0.35, 6.5%, 0.8% | 3.22, 0.36, 7.4%, 1.1% | 3.10, 0.35, 7.6%, 0.9% |
+| annealed, iteration 40 | 2.61, 0.35, 10.4%, 0.9% | 3.01, 0.31, 5.0%, 0.3% | 2.97, 0.30, 4.8%, 0.2% | 2.87, 0.31, 5.9%, 0.3% |
+| Fibonacci start (3221 tiles incl. 0.4° margin), annealed | 2.32, 0.38, 15.6%, 1.2% | 2.67, 0.34, 8.7%, 0.5% | 2.64, 0.34, 9.3%, 0.5% | 2.55, 0.33, 10.0%, 0.6% |
+
+The annealing lowers rms/mean by ~15% and the deep holes (< 0.5) by a factor
+2-4 at the same number of exposures; the mean drops ~7% because edge tiles
+move outward to flatten the footprint boundary (coverage spilling outside the
+footprint is not counted).  The objective was still decreasing slowly at
+iteration 40 (step sigma had shrunk to 0.02°), so a longer/slower anneal will
+improve it further.  The Fibonacci start spreads its tiles over the margin as
+well, hence its lower mean; at equal interior mean it would need ~12% more
+tiles.  `hsc_anneal_from_hironao4_tiles_0040.fits` holds the annealed
+centres (`ra, dec`) with the starting positions (`ra0, dec0`); the PNGs show
+the coverage around (RA, Dec) = (180, 0) before and after.
+
 ## Next steps
 
 1. Confirm with Hironao: the missing 413 CCDs, the ~10.4' cross width, and

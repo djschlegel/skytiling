@@ -293,33 +293,46 @@ class MapTilingOptimizer:
                 f'{f} {mean[k]:.3f}+-{rms[k]:.3f} ({rms[k] / mean[k]:.3f}) <1.5 {100 * np.mean(c[:, k] < 1.5):.2f}% <0.5 {100 * np.mean(c[:, k] < 0.5):.3f}%'
                 for k, f in enumerate(self.cam.filters)))
 
+    def grid_coverage(self, ra_center, dec_center, diameter, res_arcmin=0.5):
+        """Coverage (n_pix, n_pix, nf) evaluated on a tangent-plane grid about (ra_center, dec_center)."""
+        n = int(round(diameter * 60 / res_arcmin))
+        g = (np.arange(n) + 0.5) * res_arcmin / 60.0 - diameter / 2
+        X, Y = np.meshgrid(g, g)                       # X = east offset [deg], Y = north
+        c0 = radec_to_xyz(ra_center, dec_center)
+        e0, n0 = east_north(c0)
+        # inverse gnomonic projection of the grid
+        xr, yr = np.radians(X.ravel()), np.radians(Y.ravel())
+        pts = c0[None, :] + xr[:, None] * e0[None, :] + yr[:, None] * n0[None, :]
+        pts /= np.linalg.norm(pts, axis=1, keepdims=True)
+        cov = np.zeros((pts.shape[0], self.cam.nf), dtype=np.float32)
+        near = np.arccos(np.clip(self.tiles @ c0, -1, 1)) < np.radians(diameter / 2 * 1.5 + self.cam.max_radius)
+        for t in self.tiles[near]:
+            sel = (pts @ t) > np.cos(np.radians(self.cam.max_radius))
+            if sel.any():
+                cov[sel] += self._tile_coverage(t, pts[sel])
+        return X, Y, cov.reshape(n, n, self.cam.nf)
+
     def plot(self, path, ra_center, dec_center, diameter, res_arcmin=0.5):
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        ra, dec = xyz_to_radec(self.rand)
-        dra = ((ra - ra_center + 180) % 360 - 180) * np.cos(np.radians(dec_center))
-        ddec = dec - dec_center
+        X, Y, cov = self.grid_coverage(ra_center, dec_center, diameter, res_arcmin)
         h = diameter / 2
-        sel = (np.abs(dra) < h) & (np.abs(ddec) < h)
-        nb = int(diameter * 60 / res_arcmin)
         nf = self.cam.nf
         fig, axes = plt.subplots(2, nf, figsize=(4.6 * nf, 8.5))
         vmax = float(np.percentile(self.cov, 99.5)) * 1.05
         tra, tdec = xyz_to_radec(self.tiles)
         tdra = ((tra - ra_center + 180) % 360 - 180) * np.cos(np.radians(dec_center)); tddec = tdec - dec_center
         tsel = (np.abs(tdra) < h) & (np.abs(tddec) < h)
+        mean, rms = self.stats()
         for k, f in enumerate(self.cam.filters):
             ax = axes[0, k]
-            H, xe, ye = np.histogram2d(dra[sel], ddec[sel], bins=nb, range=[[-h, h], [-h, h]], weights=self.cov[sel, k])
-            N, _, _ = np.histogram2d(dra[sel], ddec[sel], bins=nb, range=[[-h, h], [-h, h]])
-            im = ax.imshow((H / np.maximum(N, 1)).T, origin='lower', extent=[h, -h, -h, h], vmin=0, vmax=vmax, cmap='viridis')
+            im = ax.imshow(cov[:, :, k], origin='lower', extent=[h, -h, -h, h], vmin=0, vmax=vmax, cmap='viridis')
             ax.plot(tdra[tsel], tddec[tsel], 'w+', ms=4, mew=0.8)
             ax.set_title(f'{f}: coverage around ({ra_center}, {dec_center})'); ax.set_xlabel('dRA cos(dec) [deg]'); ax.set_ylabel('dDec [deg]')
             plt.colorbar(im, ax=ax, fraction=0.046)
             ax = axes[1, k]
             ax.hist(self.cov[:, k], bins=np.arange(0, vmax + 0.25, 0.25), color=f'C{k}')
-            mean, rms = self.stats()
             ax.set_title(f'{f}: mean {mean[k]:.2f}, rms {rms[k]:.2f}, rms/mean {rms[k] / mean[k]:.3f}')
             ax.set_xlabel('coverage (sum of throughput)'); ax.set_yscale('log')
         plt.tight_layout(); plt.savefig(path, dpi=80); plt.close(fig)
