@@ -162,7 +162,8 @@ than a scaled lattice.
 ## Annealing on the HSC-Niji footprint (`data/subaru/anneal/`)
 
 `optimize_tiling_maps` moves the tile centres (each observed at PA
-0/90/180/270) to minimise the summed per-sub-filter coverage variance over
+0/90/180/270, optionally plus a per-tile rotation offset that is annealed as
+well, `--delta-rot`) to minimise the summed per-sub-filter coverage variance over
 2M randoms inside the footprint (0.75° discs around the 802 wide pointings,
 1194 deg²), with each sub-filter's `THRU` map.  Run with the same 3208 tiles
 as Hironao's phase 1 (4 dithers x 802 pointings), 40 iterations, step sigma

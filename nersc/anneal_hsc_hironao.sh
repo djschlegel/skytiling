@@ -21,5 +21,5 @@ DATA=$REPO/data/subaru
 $SKYTILING_PY -u "$REPO/bin/optimize_tiling_maps" -t $DATA/hsc_mbq1_throughput.fits \
     --footprint $DATA/hsc_niji_wide_pointings.csv --footprint-radius 0.75 \
     --init-offsets "12.2,19.5 -19.5,12.2 -12.2,-19.5 19.5,-12.2" \
-    --workers $NWORK --max-drift 0.75 --moves-per-tile 4 --num-randoms 4000000 \
+    --workers $NWORK --max-drift 0.75 --moves-per-tile 4 --delta-rot 10 --num-randoms 4000000 \
     --iters 300 --delta 0.1 --shrink 0.99 --seed 1 --plot --ra-center 180 --dec-center 0 --diameter 5 -o hironao_

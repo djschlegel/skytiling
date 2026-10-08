@@ -10,8 +10,11 @@ coverage of a sky point in sub-filter f is
 
     c_f = sum over tiles, sum over rotations of  THRU_f(camera coords of the point)
 
-i.e. the effective number of full-throughput exposures.  Tile centres are
-moved by simulated annealing to minimise  sum_f Var(c_f)  over a catalogue of
+i.e. the effective number of full-throughput exposures.  Each tile also
+carries a rotation offset theta: it is observed at theta + each angle in
+``--rotations`` (the set stays rigid, e.g. 90 deg apart, but can turn as a
+whole; ``--delta-rot 0`` freezes it).  Tile centres and rotations are moved
+by simulated annealing to minimise  sum_f Var(c_f)  over a catalogue of
 random points.  The randoms can be restricted to a survey footprint, defined
 as the union of discs around a list of pointing centres (e.g. the HSC-Niji
 wide pointings); tiles are placed over the footprint plus a margin so its
@@ -27,7 +30,7 @@ Initial tile positions are either a Fibonacci lattice clipped to the footprint
 (+ margin), the pointing list itself with dither offsets (``--init-offsets``,
 to start from or evaluate a dither pattern), or a tiles FITS file (``--tiles``,
 e.g. a checkpoint to resume).  Each iteration writes
-``<prefix>tiles_NNNN.fits`` (tileid, ra, dec, ra0, dec0) and, with
+``<prefix>tiles_NNNN.fits`` (tileid, ra, dec, rot, ra0, dec0) and, with
 ``--plot``, coverage maps and histograms.
 """
 import argparse
@@ -103,12 +106,12 @@ class ThroughputCamera:
         self.max_radius = float(r[any_map].max())        # deg, outermost illuminated cell
         self.area = self.maps.sum(axis=(1, 2)) * self.res ** 2   # deg^2 per filter (throughput-weighted)
 
-    def coverage(self, lx, ly, rotations_rad):
-        """Sum over rotations of the maps at camera coords; lx, ly in deg (tangent plane,
-        x = east, y = north).  Returns (M, nf)."""
+    def coverage(self, lx, ly, rotations_rad, theta=0.0):
+        """Sum over rotations (each offset by theta) of the maps at camera coords;
+        lx, ly in deg (tangent plane, x = east, y = north).  Returns (M, nf)."""
         out = np.zeros((lx.shape[0], self.nf), dtype=np.float32)
         for phi in rotations_rad:
-            c, s = np.cos(phi), np.sin(phi)
+            c, s = np.cos(phi + theta), np.sin(phi + theta)
             cx = lx * c + ly * s
             cy = -lx * s + ly * c
             ix = np.floor((cx + self.half) / self.res).astype(np.int64)
@@ -179,20 +182,20 @@ class Footprint:
 _G = {}
 
 
-def _tile_coverage(cam, rot, t, pts):
+def _tile_coverage(cam, rot, t, pts, theta=0.0):
     east, north = east_north(t)
     lx, ly = tangent_coords(pts, t, east, north)
-    return cam.coverage(lx, ly, rot)
+    return cam.coverage(lx, ly, rot, theta)
 
 
 def _worker(task):
     """Process a chunk of tiles from one layer: propose moves, accept, update shared coverage.
 
-    task = (items, sum_c, sigma, seed) with items = [(i, tile_xyz), ...].
+    task = (items, sum_c, sigma, sigma_rot, seed) with items = [(i, tile_xyz, theta), ...].
     Tiles in one layer have disjoint candidate sets, so workers never write the
-    same coverage rows.  Returns [(i, new_xyz, accepted, d_sum, d_sum2, move_deg), ...].
+    same coverage rows.  Returns [(i, new_xyz, new_theta, accepted, d_sum, d_sum2, move_deg, rot_deg), ...].
     """
-    items, sum_c, sigma, seed = task
+    items, sum_c, sigma, sigma_rot, seed = task
     cam, rot = _G['cam'], _G['rot']
     n_rand, nf = _G['n_rand'], cam.nf
     cov = np.frombuffer(_G['cov_raw'], dtype=np.float32).reshape(n_rand, nf)
@@ -202,44 +205,46 @@ def _worker(task):
     rng = np.random.default_rng(seed)
     sum_c = np.array(sum_c, dtype=np.float64)
     out = []
-    for i, t in items:
+    for i, t, th in items:
         c = cand[i]
         if len(c) == 0:
-            out.append((i, t, False, None, None, 0.0)); continue
+            out.append((i, t, th, False, None, None, 0.0, 0.0)); continue
         pts = rand[c]
         cur = cov[c].astype(np.float64)
-        old = _tile_coverage(cam, rot, t, pts).astype(np.float64)
+        old = _tile_coverage(cam, rot, t, pts, th).astype(np.float64)
         east, north = east_north(t)
         best = None
         for _ in range(k):
-            dx, dy = rng.normal(0, sigma, 2)
+            dx, dy = rng.normal(0, sigma, 2) if sigma > 0 else (0.0, 0.0)
             p = t + dx * east + dy * north
             p /= np.linalg.norm(p)
             d0 = np.arccos(np.clip(p @ tiles0[i], -1, 1))
             if d0 > max_drift:
                 p = tiles0[i] + (p - tiles0[i]) * (max_drift / d0)
                 p /= np.linalg.norm(p)
-            new = _tile_coverage(cam, rot, p, pts).astype(np.float64)
+            th_new = th + (rng.normal(0, sigma_rot) if sigma_rot > 0 else 0.0)
+            new = _tile_coverage(cam, rot, p, pts, th_new).astype(np.float64)
             delta = new - old
             d_sum = delta.sum(axis=0)
             d_sum2 = (2 * cur * delta + delta ** 2).sum(axis=0)
             d_e = float(np.sum(d_sum2 - (2 * sum_c * d_sum + d_sum ** 2) / n_rand))
             if best is None or d_e < best[0]:
-                best = (d_e, p, delta, d_sum, d_sum2)
-        d_e, p, delta, d_sum, d_sum2 = best
+                best = (d_e, p, th_new, delta, d_sum, d_sum2)
+        d_e, p, th_new, delta, d_sum, d_sum2 = best
         accept = d_e < 0 or (temp > 0 and rng.random() < np.exp(-d_e / (temp * 1e6)))
         if accept:
             cov[c] += delta.astype(np.float32)
             sum_c += d_sum
-            out.append((i, p, True, d_sum, d_sum2, float(np.degrees(np.arccos(np.clip(p @ t, -1, 1))))))
+            out.append((i, p, th_new, True, d_sum, d_sum2,
+                        float(np.degrees(np.arccos(np.clip(p @ t, -1, 1)))), float(np.degrees(th_new - th))))
         else:
-            out.append((i, t, False, None, None, 0.0))
+            out.append((i, t, th, False, None, None, 0.0, 0.0))
     return out
 
 
 class MapTilingOptimizer:
     def __init__(self, camera, randoms_xyz, tiles_xyz, rotations_deg, max_drift, delta,
-                 temp, moves_per_tile, seed=0, workers=1):
+                 temp, moves_per_tile, seed=0, workers=1, theta_deg=None, delta_rot=0.0):
         from scipy.spatial import cKDTree
         self.cam = camera
         self.rot = [np.radians(r) for r in rotations_deg]
@@ -247,8 +252,10 @@ class MapTilingOptimizer:
         self.tiles = np.ascontiguousarray(tiles_xyz, dtype=np.float64)
         self.tiles0 = self.tiles.copy()
         self.n_tiles = len(self.tiles)
+        self.theta = np.zeros(self.n_tiles) if theta_deg is None else np.radians(np.asarray(theta_deg, float))
         self.max_drift = np.radians(max_drift)
         self.sigma = np.radians(delta)
+        self.sigma_rot = np.radians(delta_rot)
         self.temp = temp
         self.moves_per_tile = max(1, int(moves_per_tile))
         self.workers = max(1, int(workers))
@@ -275,7 +282,7 @@ class MapTilingOptimizer:
         for i in range(self.n_tiles):
             c = self.cand[i]
             if len(c):
-                self.cov[c] += self._tile_coverage(self.tiles[i], self.rand[c])
+                self.cov[c] += self._tile_coverage(self.tiles[i], self.rand[c], self.theta[i])
         print(f'[timing] initial coverage in {time.time() - t0:.1f} s', flush=True)
         self._refresh_sums()
 
@@ -283,8 +290,8 @@ class MapTilingOptimizer:
         self.layers = self._build_layers()
         print(f'[timing] {len(self.layers)} layers (mean {self.n_tiles / len(self.layers):.1f} tiles) in {time.time() - t0:.1f} s', flush=True)
 
-    def _tile_coverage(self, t, pts):
-        return _tile_coverage(self.cam, self.rot, t, pts)
+    def _tile_coverage(self, t, pts, theta=0.0):
+        return _tile_coverage(self.cam, self.rot, t, pts, theta)
 
     def _build_layers(self):
         """Greedy colouring so that no two tiles closer than 2*(max_radius + max_drift)
@@ -338,26 +345,27 @@ class MapTilingOptimizer:
                   cand=self.cand, tiles0=self.tiles0, max_drift=self.max_drift, temp=self.temp,
                   moves_per_tile=self.moves_per_tile)
         acc = imp = rej = 0
-        dists = []
+        dists, rots = [], []
         for layer in self.layers:
             layer = [int(i) for i in self.rng.permutation(layer)]
             nchunk = min(self.workers, len(layer)) if self.workers > 1 else 1
             chunks = [layer[j::nchunk] for j in range(nchunk)]
-            tasks = [([(i, self.tiles[i]) for i in ch], self.sum_c.copy(), self.sigma, int(self.rng.integers(2 ** 31)))
-                     for ch in chunks if ch]
+            tasks = [([(i, self.tiles[i], float(self.theta[i])) for i in ch], self.sum_c.copy(), self.sigma,
+                      self.sigma_rot, int(self.rng.integers(2 ** 31))) for ch in chunks if ch]
             results = self.pool.map(_worker, tasks) if self.pool else [_worker(t) for t in tasks]
             for res in results:
-                for i, p, accepted, d_sum, d_sum2, move in res:
+                for i, p, th, accepted, d_sum, d_sum2, move, drot in res:
                     if accepted:
-                        self.tiles[i] = p
+                        self.tiles[i] = p; self.theta[i] = th
                         self.sum_c += d_sum; self.sum_c2 += d_sum2
-                        dists.append(move); acc += 1
+                        dists.append(move); rots.append(abs(drot)); acc += 1
                     else:
                         rej += 1
         self._refresh_sums()   # exact sums (guards float32 accumulation and stale sums in workers)
         mean, rms = self.stats()
         return dict(accepted=acc, improved=acc, rejected=rej, mean=mean, rms=rms,
-                    move=(np.min(dists), np.median(dists), np.max(dists)) if dists else (0, 0, 0))
+                    move=(np.min(dists), np.median(dists), np.max(dists)) if dists else (0, 0, 0),
+                    rot=(np.median(rots), np.max(rots)) if rots else (0, 0))
 
     def close(self):
         if self.pool:
@@ -369,9 +377,11 @@ class MapTilingOptimizer:
         ra, dec = xyz_to_radec(self.tiles); ra0, dec0 = xyz_to_radec(self.tiles0)
         cols = [fits.Column(name='tileid', format='K', array=np.arange(self.n_tiles) + 1),
                 fits.Column(name='ra', format='D', array=ra), fits.Column(name='dec', format='D', array=dec),
+                fits.Column(name='rot', format='D', unit='deg', array=np.degrees(self.theta) % 360.0),
                 fits.Column(name='ra0', format='D', array=ra0), fits.Column(name='dec0', format='D', array=dec0)]
         hdu = fits.BinTableHDU.from_columns(cols, name='TILES')
         hdu.header['ITER'] = iteration
+        hdu.header['ROTS'] = (','.join(f'{np.degrees(r):g}' for r in self.rot), 'rotation set added to rot [deg]')
         mean, rms = self.stats()
         for k, f in enumerate(self.cam.filters):
             hdu.header[f'MEAN_{f}'] = (float(mean[k]), 'mean coverage'); hdu.header[f'RMS_{f}'] = (float(rms[k]), 'rms coverage')
@@ -398,10 +408,10 @@ class MapTilingOptimizer:
         pts /= np.linalg.norm(pts, axis=1, keepdims=True)
         cov = np.zeros((pts.shape[0], self.cam.nf), dtype=np.float32)
         near = np.arccos(np.clip(self.tiles @ c0, -1, 1)) < np.radians(diameter / 2 * 1.5 + self.cam.max_radius)
-        for t in self.tiles[near]:
+        for t, th in zip(self.tiles[near], self.theta[near]):
             sel = (pts @ t) > np.cos(np.radians(self.cam.max_radius))
             if sel.any():
-                cov[sel] += self._tile_coverage(t, pts[sel])
+                cov[sel] += self._tile_coverage(t, pts[sel], th)
         return X, Y, cov.reshape(n, n, self.cam.nf)
 
     def plot(self, path, ra_center, dec_center, diameter, res_arcmin=0.5):
@@ -452,7 +462,10 @@ def parse_arguments(argv=None):
     p.add_argument('--init-offsets', help='start from the footprint pointings with these dither offsets '
                                            '"dx,dy dx,dy ..." [arcmin, +x = +RA]; e.g. Hironao phase 1')
     p.add_argument('--max-drift', type=float, default=1.0, help='max drift from initial position [deg]')
-    p.add_argument('--delta', type=float, default=0.1, help='proposal step sigma [deg]')
+    p.add_argument('--delta', type=float, default=0.1, help='position proposal sigma [deg]')
+    p.add_argument('--delta-rot', type=float, default=0.0,
+                   help='rotation-offset proposal sigma [deg]; 0 keeps every tile at the --rotations set')
+    p.add_argument('--init-rot', default='zero', help='initial rotation offsets: "zero", "random", or a value in deg')
     p.add_argument('--shrink', type=float, default=1.0, help='multiply delta by this each iteration')
     p.add_argument('--temp', type=float, default=0.0, help='Metropolis temperature')
     p.add_argument('--moves-per-tile', type=int, default=3)
@@ -501,9 +514,12 @@ def main(argv=None):
 
     # initial tiles
     start_iter = 0
+    theta = None
     if opts.tiles:
         d = fits.getdata(opts.tiles)
         tiles = radec_to_xyz(d['ra'], d['dec'])
+        if 'rot' in d.names:
+            theta = np.array(d['rot'], float)
         it = parse_resume_iteration(opts.tiles)
         if it is not None and 'ra0' in d.names:
             start_iter = it
@@ -552,10 +568,17 @@ def main(argv=None):
     print(f'expected mean coverage per filter ~ {np.round(len(tiles) * len(rot) * cam.area / (fp.area(rng) if fp else 1), 3)} '
           f'(tiles x rotations x area / footprint area; edge tiles cover outside)')
 
+    if theta is None:
+        if opts.init_rot == 'random':
+            theta = rng.uniform(0, 360, len(tiles))
+        elif opts.init_rot == 'zero':
+            theta = np.zeros(len(tiles))
+        else:
+            theta = np.full(len(tiles), float(opts.init_rot))
     workers = opts.workers or int(os.environ.get('NCPUS', os.environ.get('SLURM_CPUS_PER_TASK', os.cpu_count() or 1)))
     print(f'using {workers} worker process(es)')
     opt = MapTilingOptimizer(cam, rand, tiles, rot, opts.max_drift, opts.delta, opts.temp, opts.moves_per_tile,
-                             seed=opts.seed, workers=workers)
+                             seed=opts.seed, workers=workers, theta_deg=theta, delta_rot=opts.delta_rot)
     opt.tiles0[:] = tiles0
     if fp is not None:
         opt.interior = fp.interior(rand)
@@ -572,12 +595,12 @@ def main(argv=None):
         r = opt.iterate()
         s = '; '.join(f'{f} {r["mean"][k]:.3f}+-{r["rms"][k]:.3f}' for k, f in enumerate(cam.filters))
         print(f'Iter {it:4d} | {s} | sum rms/mean {np.sum(r["rms"] / r["mean"]):.4f} | sigma {np.degrees(opt.sigma):.4f} '
-              f'| acc {r["accepted"]} (imp {r["improved"]}) rej {r["rejected"]} | move [{r["move"][0]:.4f}, {r["move"][1]:.4f}, {r["move"][2]:.4f}] '
-              f'| {time.time() - t0:.1f} s', flush=True)
+              f'| acc {r["accepted"]} rej {r["rejected"]} | move [{r["move"][0]:.4f}, {r["move"][1]:.4f}, {r["move"][2]:.4f}] '
+              f'| rot [{r["rot"][0]:.2f}, {r["rot"][1]:.2f}] | {time.time() - t0:.1f} s', flush=True)
         opt.write_tiles(f'{opts.output}tiles_{it:04d}.fits', it)
         if opts.plot:
             opt.plot(f'{opts.output}coverage_{it:04d}.png', opts.ra_center, opts.dec_center, opts.diameter)
-        opt.sigma *= opts.shrink
+        opt.sigma *= opts.shrink; opt.sigma_rot *= opts.shrink
     opt.close()
     opt.report('final')
 

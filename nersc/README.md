@@ -53,6 +53,10 @@ smaller step.
 * `--delta` / `--shrink`: proposal sigma [deg] and its per-iteration decay.
   The local runs used 0.1 x 0.96^n for 40 iterations and were still improving
   when sigma reached 0.02; the NERSC scripts use 0.1 x 0.99^n for 300.
+* `--delta-rot`: sigma [deg] of the per-tile rotation-offset proposals (the
+  four PAs stay 90 deg apart but the set turns as a whole); it shrinks with
+  `--shrink` too.  0 freezes all tiles at `--rotations`.  `--init-rot random`
+  starts from random offsets.
 * `--moves-per-tile`: proposals per tile per iteration (best one is kept).
 * `--max-drift`: cap on the distance from the starting position; it also sets
   the layer separation, so a larger value means fewer, bigger layers.

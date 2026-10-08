@@ -39,12 +39,12 @@ NWORK=$(( NCPUS / 2 )); [ $NWORK -lt 1 ] && NWORK=1
 
 DATA=$REPO/data/subaru
 COMMON="-t $DATA/hsc_mbq1_throughput.fits --footprint $DATA/hsc_niji_wide_pointings.csv --footprint-radius 0.75
-        --workers $NWORK --max-drift 0.75 --moves-per-tile 4 --plot --ra-center 180 --dec-center 0 --diameter 5 -o fib_"
+        --workers $NWORK --max-drift 0.75 --moves-per-tile 4 --delta-rot 10 --plot --ra-center 180 --dec-center 0 --diameter 5 -o fib_"
 
 if [ -n "$1" ]; then
     # resume from a checkpoint (fib_tiles_NNNN.fits); reuse the randoms it was made with
     $SKYTILING_PY -u "$REPO/bin/optimize_tiling_maps" $COMMON --tiles "$1" --randoms fib_randoms_4000000.fits \
-        --iters 200 --delta 0.03 --shrink 0.99
+        --iters 200 --delta 0.03 --delta-rot 3 --shrink 0.99
 else
     $SKYTILING_PY -u "$REPO/bin/optimize_tiling_maps" $COMMON --ntiles 3208 --margin 0.0 --num-randoms 4000000 \
         --iters 300 --delta 0.1 --shrink 0.99 --seed 1
