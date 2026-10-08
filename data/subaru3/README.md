@@ -122,7 +122,7 @@ uniformity with the spill mostly held, and p = 2 pulls the tiles in further
 rms/mean, which now includes a steeper edge roll-off.  `--keep-inside d`
 additionally rejects moves that take a tile centre more than d deg beyond the
 footprint (not needed in this test: no centre got that far).
-`nersc/anneal_hsc_stripes.sh [p]` runs the full four-stripe problem.
+`nersc/anneal_hsc_stripes.sh [p]` runs the full four-stripe problem on the trimmed footprint.
 
 ### How the stripes compare with the HSC-Niji wide footprint
 
@@ -144,6 +144,14 @@ The excess is almost all in RA: NGC-5 runs 24 deg past the HSC data at the high-
 NGC-6 2 deg, and the SGC stripes extend 16 deg below and 5-8 deg above it.  In Dec the
 NGC band fits the HSC rows well (its bottom edge at -2.12 runs along the zig-zag bottom of
 the lowest row of cells, so a 0.4-deg strip there is only half covered); the SGC band
-sits inside the HSC Dec range.  `niji_stripes_2p8_hsc.csv` is the same four stripes with
+sits inside the HSC Dec range.  **`niji_stripes_2p8_hsc.csv` — the adopted footprint —** is the same four stripes with
 the RA bounds trimmed to the HSC extent (NGC 128.0-226.0, SGC 330.2-39.7): 937 deg², of
-which 905 inside HSC and 32 outside (the NGC-6 bottom strip); 637 lattice centres.
+which 905 inside HSC and 32 outside (the NGC-6 bottom strip); 637 lattice centres, 2548
+tiles with Atsushi's four dithers.
+
+| stripe (trimmed) | RA | Dec (2.8-deg band) | area deg² |
+|---|---|---|---|
+| NGC-5 | 128.0-226.0 | 0.68-3.48 | 274.2 |
+| NGC-6 | 128.0-226.0 | -2.12-0.68 | 274.4 |
+| SGC-1 | 330.2-39.7 | 1.89-4.69 | 194.3 |
+| SGC-2 | 330.2-39.7 | -0.91-1.89 | 194.6 |
