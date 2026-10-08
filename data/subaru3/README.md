@@ -77,3 +77,48 @@ still has lower absolute rms in every sub-filter, but its mean inside the
 interior is 8% lower because its tiles were pulled outward to cover the
 footprint edges).  The tiling is re-annealed against this model in
 `anneal/nersc_atsushi3/` (`nersc/anneal_hsc_resume.sh`).
+
+## Rectangular footprint: the DESI Run 2 Niji stripes
+
+The DESI Run 2 imaging plan divides the survey into declination stripes 2.8
+deg apart (`../desi_run2_stripes.csv`, its Table 2).  Four are to be imaged by
+HSC-Niji + VST: NGC-5 and NGC-6 (adjacent, a 5.6-deg band at Dec -2.12 to
+3.48) and SGC-1 and SGC-2 (adjacent, Dec -0.91 to 4.69).  `niji_stripes_2p8.csv`
+gives their unique 2.8-deg bands with the tabulated RA bounds (1134 deg² in
+all) — the region where the medium-band coverage should be uniform, with the
+hard Dec edges abutting the stripes imaged by other telescopes.  (The plan's
+tabulated Dec bounds are 3.5 deg tall, i.e. 0.35 deg of padding on each side;
+pass those instead if the padding is to be covered at full depth too.)
+
+`optimize_tiling_maps --rects niji_stripes_2p8.csv` uses this union of
+rectangles as the footprint (randoms uniform inside it; "interior" statistics
+exclude points within `--interior-margin` 0.75 deg of its boundary).
+`--init-lattice 1.299,1.125` seeds pointing centres on rows of constant Dec
+with the HSC-SSP Wide spacing, fitted to each band (5 rows per 5.6-deg band,
+1.12 deg apart, with the number of columns rounded so the lattice is centred
+in each row's RA extent), and `--init-offsets` adds Atsushi's four dithers:
+784 centres, 3136 tiles, 1.45 deg² per centre as in his layout.  The output
+tables carry a `pid` column (index of the undithered centre) so the four
+dithers of a pointing can be scheduled together.
+
+To stop the anneal pushing coverage outside the footprint, `--objective cv
+--cv-power p` minimises Σ_f rms_f / mean_f^p instead of Σ_f N Var(c_f).
+Because the total coverage of a fixed set of exposures is conserved, the mean
+inside the footprint rises only when coverage is pulled back in from outside,
+so the cv objective charges for spill; p sets how strongly.  On a 15 x 5.6 deg
+test rectangle (232 tiles, 25 local iterations from the lattice start):
+
+| objective | mean inside (all randoms) | rms/mean, all randoms | interior mean | interior rms/mean | interior < 1.5 exp. |
+|---|---|---|---|---|---|
+| start (lattice + dithers) | 2.96 / 3.37 / 3.32 / 3.21 | 0.41 / 0.36 / 0.37 / 0.36 | 3.25 / 3.73 / 3.67 / 3.55 | 0.35 / 0.29 / 0.30 / 0.29 | 5.9 / 2.4 / 2.8 / 2.9% |
+| var (p = 0) | 2.80 / 3.19 / 3.14 / 3.04 | 0.33 / 0.30 / 0.30 / 0.31 | 2.90 / 3.32 / 3.26 / 3.17 | 0.32 / 0.28 / 0.28 / 0.29 | 5.9 / 2.6 / 2.8 / 3.5% |
+| cv, p = 1 | 2.92 / 3.32 / 3.28 / 3.17 | 0.33 / 0.30 / 0.30 / 0.31 | 3.07 / 3.51 / 3.46 / 3.35 | 0.31 / 0.28 / 0.28 / 0.29 | 4.7 / 2.1 / 2.0 / 2.7% |
+| cv, p = 2 | 3.02 / 3.44 / 3.38 / 3.28 | 0.34 / 0.31 / 0.31 / 0.32 | 3.21 / 3.68 / 3.62 / 3.51 | 0.31 / 0.28 / 0.28 / 0.29 | 3.5 / 1.6 / 1.7 / 2.2% |
+
+The variance objective lost 5% of the mean to spill; p = 1 reaches the same
+uniformity with the spill mostly held, and p = 2 pulls the tiles in further
+(interior depth +10% over var, fewer holes) at a small cost in the global
+rms/mean, which now includes a steeper edge roll-off.  `--keep-inside d`
+additionally rejects moves that take a tile centre more than d deg beyond the
+footprint (not needed in this test: no centre got that far).
+`nersc/anneal_hsc_stripes.sh [p]` runs the full four-stripe problem.

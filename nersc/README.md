@@ -81,3 +81,15 @@ minutes on one node.  When done, copy `atsushi3_tiles_0000.fits`,
 * `--temp`: Metropolis temperature (0 = greedy descent); energies are
   sum_f N Var(c_f) so a useful temperature is of order 1e-6 x that.
 * `--use-good`: optimise the 0/1 footprint instead of the throughput maps.
+
+## Rectangular stripes (DESI Run 2 Niji stripes)
+
+```
+sbatch nersc/anneal_hsc_stripes.sh 1      # rms/mean objective
+sbatch nersc/anneal_hsc_stripes.sh 2      # rms/mean^2: pulls tiles in harder
+```
+
+anneals a lattice + dither start (3136 tiles) over `data/subaru3/niji_stripes_2p8.csv`
+against the `data/subaru3` model, 300 iterations (`--objective cv`, see
+`data/subaru3/README.md`); output `$SCRATCH/skytiling/hsc_stripes/stripes_p<p>_tiles_NNNN.fits`
+with a `pid` (pointing id) column.  Both runs share the randoms file written by the first.
