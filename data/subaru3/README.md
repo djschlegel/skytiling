@@ -175,3 +175,15 @@ this footprint.
 | SGC-2 | 330.2-39.7 | -0.91-1.89 | 194.6 | 191.6 |
 | SGC-3 | 28.7-39.7 | -3.71 to -0.91 | 30.8 | 29.0 |
 | SGC-4 | 28.7-39.7 | -6.51 to -3.71 | 30.7 | 28.8 |
+
+### Rubin WFD coverage of the HSC-Niji rectangles
+
+Checked against the Rubin baseline v5.3.5 10-year simulation (`data/rubin_5.3.5_10yrs.fits`,
+git-ignored; `../rubin_visit_maps.py`, `../niji_vs_rubin.py`): visits per band within 1.75 deg of
+each point, DD/ToO/twilight visits excluded.  NGC-5, NGC-6, SGC-2, SGC-3 and SGC-4 have >= 30
+visits in every one of ugriz over >= 99.9% of their area (>= 40 u visits over 94-100%).
+SGC-1 straddles the northern WFD edge in the SGC: the edge is a 1.75-deg-wide roll-off centred
+near Dec +3.5, full WFD depth reaches Dec ~2.8-3.0, 30 u visits are reached over 55% of SGC-1
+(Dec < ~3.4) and 40 over 33%; its upper ~1.3 deg has no u and little g.  North of Dec 5 at
+RA 0-35 there is a griz-only extension with ~26-31 g and ~45 r visits (no u).
+`niji_sgc_vs_rubin_v535.png` shows the u and r visit maps with the rectangles.
