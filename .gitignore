@@ -39,3 +39,8 @@ Claude outputs/
 # Overleaf clone of the DESI Run 2 imaging plan (its own git repo)
 /data/desi_run2_plan/
 /data/footprints/
+*_uncompressed.fits
+/data/desi_run2_imaging_plan/
+/hsc_stripes_local/
+/hsc_stripes_local2/
+/hsc_stripes_*.out
