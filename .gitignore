@@ -34,3 +34,13 @@ Claude outputs/
 /hsc_atsushi/
 /hsc_atsushi2/
 /data/rubin_5.3.5_10yrs.fits
+/data/wide-observing-strategy/
+/hsc_atsushi3/
+/hsc_stripes/
+/hsc_stripes_local/
+/hsc_stripes_local2/
+/hsc_stripes_*.out
+/data/desi_run2_plan/
+/data/desi_run2_imaging_plan/
+/data/footprints/
+*_uncompressed.fits
