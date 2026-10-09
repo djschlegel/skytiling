@@ -84,6 +84,7 @@ skytiling/            Python package
   optimize_tiling_maps.py annealing optimiser for throughput-map cameras (multi-filter, rotations, footprint)
   adjust_cross.py       change the masked/vignetted cross of a throughput-map file
   plot_throughput.py    one page per sub-filter of a throughput-map file, optionally vs another file
+  write_tiling_table.py final CSV/FITS tiling table with the cross-reference to the starting pointings and dithers
 bin/                  wrappers to run the above from a source checkout
 data/cfht/            CFHT MegaCam camera file, initial tiling, final solution
 data/subaru/          Subaru HSC + MBQ1 quadrant filter: camera and throughput model, tilings
