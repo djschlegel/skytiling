@@ -17,4 +17,4 @@ This is the last tiling of the original HSC-Niji wide footprint (802 pointings);
 DESI Run 2 stripe footprint (`../niji_stripes_2p8.csv`, `nersc/anneal_hsc_stripes.sh`)
 replaces it.
 
-| `local_stripes/` | Anneals over the stripe footprint (`../niji_stripes_2p8_hsc.csv`): SSP-pointing and lattice starts, rms/mean and rms/mean² objectives, 100 iterations each on 2M randoms; evaluation on independent randoms and the edge profiles across the bands. See its README. |
+| `local_stripes/` | **Adopted tiling of the stripe footprint, `hsc_mbq1_tiling_stripes_final.{csv,fits}`**, and the anneals over the stripe footprint (`../niji_stripes_2p8_hsc.csv`): SSP-pointing and lattice starts, rms/mean and rms/mean² objectives, 100 iterations each on 2M randoms; evaluation on independent randoms and the edge profiles across the bands. See its README. |

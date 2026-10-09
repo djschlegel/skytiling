@@ -133,7 +133,9 @@ uniformity with the spill mostly held, and p = 2 pulls the tiles in further
 rms/mean, which now includes a steeper edge roll-off.  `--keep-inside d`
 additionally rejects moves that take a tile centre more than d deg beyond the
 footprint (not needed in this test: no centre got that far).
-`nersc/anneal_hsc_stripes.sh [p]` runs the full four-stripe problem on the trimmed footprint.
+`nersc/anneal_hsc_stripes.sh [p]` runs the full problem on the adopted footprint.  **The adopted
+tiling is `anneal/local_stripes/hsc_mbq1_tiling_stripes_final.{csv,fits}`** (SSP-pointing start,
+p = 2, 200 iterations on 4M randoms); see `docs/hsc_mbq1_anneal_summary_stripes.md`.
 
 ### How the stripes compare with the HSC-Niji wide footprint
 

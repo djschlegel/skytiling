@@ -1,7 +1,7 @@
 import numpy as np, re, matplotlib
 matplotlib.use('Agg'); import matplotlib.pyplot as plt
-d = {}; d.update(np.load('start_eval.npy', allow_pickle=True).item()); d.update(np.load('lattice_p1_eval.npy', allow_pickle=True).item())
-names = [('start', 'SSP pointings + dithers (start)', '0.4', ':'), ('ssp_p1', 'SSP start, rms/mean (p=1)', 'C0', '-'), ('ssp_p2', 'SSP start, rms/mean$^2$ (p=2)', 'C3', '-'), ('lattice_p1', 'lattice start, p=1', 'C2', '--')]
+d = np.load('all_eval.npy', allow_pickle=True).item()
+names = [('start', 'SSP pointings + dithers (start)', '0.4', ':'), ('ssp_p1', 'SSP start, rms/mean (p=1)', 'C0', '-'), ('final_p2', 'SSP start, rms/mean$^2$ (p=2, adopted)', 'C3', '-'), ('lattice_p1', 'lattice start, p=1', 'C2', '--')]
 filters = ['413', '439', '465', '490']
 # Fig 1: Dec profiles across the two bands
 fig, axes = plt.subplots(2, 2, figsize=(14, 8))
@@ -27,7 +27,7 @@ for n, L, c, ls in names[1:]:
         m = re.match(r'Iter\s+(\d+) .*sum rms/mean ([\d.]+)', line)
         if m: it.append(int(m.group(1))); s.append(float(m.group(2)))
     ax.plot(it, s, ls, color=c, label=L)
-ax.set_xlabel('iteration'); ax.set_ylabel('sum over filters of rms/mean (training randoms, inside footprint)'); ax.grid(alpha=0.3); ax.legend(fontsize=8); ax.set_title('convergence (100 iterations, 2M randoms, local runs)', fontsize=10)
+ax.set_xlabel('iteration'); ax.set_ylabel('sum over filters of rms/mean (training randoms, inside footprint)'); ax.grid(alpha=0.3); ax.legend(fontsize=8); ax.set_title('convergence (training randoms; adopted run: 200 iterations on 4M randoms, others 100 on 2M)', fontsize=10)
 ax = axes[1]; bins = np.arange(0, 7.01, 0.25)
 for n, L, c, ls in names:
     cv = d[n]['cov_in']; ax.hist(cv, bins=bins, histtype='step', color=c, ls=ls, lw=1.5, label=f'{L}: {cv.mean():.2f} ± {cv.std():.2f}')
@@ -35,7 +35,7 @@ ax.set_xlabel('MBQ1-413 coverage inside the stripes'); ax.set_ylabel('randoms');
 plt.tight_layout(); plt.savefig('hsc_stripes_stats.png', dpi=110); plt.close(fig)
 # table
 print('%-12s %-22s %-28s %-28s %-22s' % ('run', 'spill outside [%]', 'inside rms/mean', 'interior rms/mean', 'interior <1.5 [%]'))
-for n, L, c, ls in names + [('cloud_ssp_p2', '', '', '')]:
+for n, L, c, ls in names + [('ssp_p2', '', '', ''), ('cloud_ssp_p2', '', '', '')]:
     if n not in d: continue
     r = d[n]; m, s, h15, h05 = r['inside']; mi, si, hi15, hi05 = r['interior']
     print('%-12s %-22s %-28s %-28s %-22s mean inside %s' % (n, np.round(r['spill'], 1), np.round(s/m, 3), np.round(si/mi, 3), np.round(hi15, 1), np.round(m, 2)))
