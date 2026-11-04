@@ -39,10 +39,12 @@ def read_stripes():
     for name in ('SGC-3', 'SGC-4'):           # the Niji southern extension, in addition to the IBIS+POLU stripes of the same name
         n = niji[name]
         stripes.append(dict(name=name + ' (Niji)', ra_min=float(n['ra_min']), ra_max=float(n['ra_max']), dec_min=float(n['dec_min']), dec_max=float(n['dec_max']), kind='niji', ext=False))
-    # the parts of the Niji stripes outside the HSC data, at the DESI RA bounds, are imaged by IBIS+POLU instead
+    # the parts of the Niji stripes outside the HSC data, at the DESI RA bounds, are imaged by IBIS+POLU
+    # instead -- except for stripes tagged 'only' (SGC-1, largely outside the Rubin footprint), whose ends
+    # are not imaged at all
     for r in full:
         name = r['name']
-        if name not in ('NGC-5', 'NGC-6', 'SGC-1', 'SGC-2'):
+        if name not in ('NGC-5', 'NGC-6', 'SGC-1', 'SGC-2') or ' only' in r['surveys']:
             continue
         n = niji[name]; dc = float(r['dec_center'])
         for side, (lo, hi) in (('W', (float(r['ra_min']), float(n['ra_min']))), ('E', (float(n['ra_max']), float(r['ra_max'])))):
@@ -129,13 +131,14 @@ def areas(stripes):
     ibis_ext = sum(rect_area(s) for s in stripes if s['kind'] == 'ibis' and s['ext'])
     niji = sum(rect_area(s) for s in stripes if s['kind'] == 'niji')
     niji_own = sum(rect_area(s) for s in stripes if s['kind'] == 'niji' and '(Niji)' not in s['name'])   # Niji stripes not inside an IBIS stripe
+    ibis_base -= niji - niji_own   # the Niji portions of SGC-3/4 are not imaged by IBIS+POLU
     return a, ibis_base, ibis_ext, niji, niji_own
 
 if __name__ == '__main__':
     stripes = read_stripes()
     a, ibis_base, ibis_ext, niji, niji_own = areas(stripes)
     for k, v in a.items(): print(f'{k:14s} {v:7.1f}')
-    print(f'IBIS+POLU baseline {ibis_base:.0f}, extended {ibis_ext:.0f}; Niji {niji:.0f} (of which {niji - niji_own:.0f} inside IBIS stripes); high-z baseline {ibis_base + niji_own:.0f}, with extensions {ibis_base + ibis_ext + niji_own:.0f}')
+    print(f'IBIS+POLU baseline {ibis_base:.0f} (after removing the {niji - niji_own:.0f} deg2 Niji portions of SGC-3/4), extended {ibis_ext:.0f}; Niji {niji:.0f}; high-z baseline {ibis_base + niji:.0f}, with extensions {ibis_base + ibis_ext + niji:.0f}')
     d, tree = load_table()
     RA, DEC = grid(0.25); j = lookup(tree, RA, DEC)
     rub_area = d['RUBIN_WFD'].sum() * 4 * np.pi * (180 / np.pi) ** 2 / len(d)
@@ -144,11 +147,19 @@ if __name__ == '__main__':
     m = draw_stripes(ax, stripes, RA, DEC)
     cell = np.radians(0.25) ** 2 * np.cos(np.radians(DEC)) * (180 / np.pi) ** 2
     print('union of stripes (raster) %.0f deg2' % (cell * m).sum())
+    base = np.zeros(RA.shape, bool)
+    for s in stripes:
+        if not s['ext']: base |= in_rect(RA, DEC, s)
+    in_wfd = d['RUBIN_WFD'][j].astype(bool)
+    print('baseline footprint (raster) %.0f deg2, of which %.0f deg2 inside Rubin WFD' % ((cell * base).sum(), (cell * (base & in_wfd)).sum()))
+    for s in stripes:
+        if s['name'].startswith('SGC-1'):
+            ms = in_rect(RA, DEC, s); print('  %s: %.0f deg2, %.0f inside WFD' % (s['name'], (cell * ms).sum(), (cell * (ms & in_wfd)).sum()))
     handles = [Patch(facecolor='#8fb8de', alpha=0.55, label=f'Rubin/WFD ({rub_area/1000:.0f}k deg$^2$)'),
                Patch(facecolor='#f2a65a', alpha=0.85, label=f'IBIS+POLU stripes ({ibis_base:,.0f} deg$^2$)'),
                Patch(facecolor='#f2a65a', alpha=0.45, hatch='////', edgecolor='#b06d1f', label=f'possible extensions ({ibis_ext:,.0f} deg$^2$)'),
                Patch(facecolor='#5aa469', alpha=0.85, label=f'HSC-Niji+VST stripes ({niji:,.0f} deg$^2$)'),
-               Line2D([], [], color='r', lw=1.2, label=f'Imaging footprint = High-z Dark Energy Survey ({ibis_base + niji_own:,.0f} deg$^2$; {ibis_base + ibis_ext + niji_own:,.0f} with extensions)')]
+               Line2D([], [], color='r', lw=1.2, label=f'Imaging footprint = High-z Dark Energy Survey ({ibis_base + niji:,.0f} deg$^2$; {ibis_base + ibis_ext + niji:,.0f} with extensions)')]
     ax.legend(handles=handles, loc='lower center', fontsize=8, framealpha=0.95, ncol=2, bbox_to_anchor=(0.5, -0.22))
     plt.tight_layout(); plt.savefig('hiz_footprint.png', dpi=150); plt.savefig('hiz_footprint.pdf')
     # zoom panels in RA/Dec for the stripes themselves
