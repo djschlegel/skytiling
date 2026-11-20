@@ -194,7 +194,7 @@ Hironao annealed Atsushi's full 802-pointing plan (12,832 exposures, each its ow
 rotation) with a hole penalty (sum of variances + 16 x the interior fraction with n_exp <= 1 in any
 filter, randoms redrawn every 5 iterations) and adopted it for the S26B October run
 (`hsc-niji-survey/wide-observing-strategy`, `wide_dithering/anneal_results/holes_rs4m5_l16_tiles_0300.fits`;
-the clone is git-ignored under `data/wide-observing-strategy/`).  On common randoms in the stripe
+a clone is kept outside this repository, at `~/Imaging/wide-observing-strategy`).  On common randoms in the stripe
 interior his tiling has sum rms/mean 1.098 and 8.2% of the area seen <= 1 time in some filter
 against 1.148 and 8.8% for our final p = 2 tiling, at the same mean depth; 22% of his coverage
 falls outside the DESI stripes (the Dec 4.3-6.4 rows), 5.5% of ours.  Write-up:
