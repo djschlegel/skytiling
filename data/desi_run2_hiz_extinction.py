@@ -13,6 +13,9 @@ for s in stripes: union|=in_rect(RA,DEC,s)
 base=np.zeros(RA.shape,bool)            # the baseline footprint: without bonus regions (SGC-1)
 for s in stripes:
     if not s['ext']: base|=in_rect(RA,DEC,s)
+bonus=np.zeros(RA.shape,bool)           # bonus regions outside the baseline (SGC-1, HSC-Niji+VST only)
+for s in stripes:
+    if s['ext']: bonus|=in_rect(RA,DEC,s)
 ebv_all=sfd_ebv(RA.ravel(),DEC.ravel()).reshape(RA.shape)      # the whole panel area
 ebv=np.where(union, ebv_all, np.nan)
 cell=np.radians(res)**2*np.cos(np.radians(DEC))*(180/np.pi)**2
@@ -39,11 +42,12 @@ for ax,(lab,lo,hi) in zip(axes,(('NGC',115,260),('SGC',295,440))):
     x=np.linspace(lo,hi,sub.shape[1]); y=np.linspace(-23,17,sub.shape[0])
     ax.contour(x,y,np.where(usub>0.5,sub,0),levels=[0.1],colors='c',linewidths=0.5)
     ax.contour(x,y,usub,levels=[0.5],colors='k',linewidths=2.0)
+    if bonus[:,cols].any(): ax.contour(x,y,bonus[:,cols].astype(float),levels=[0.5],colors='k',linewidths=1.2,linestyles='--')   # bonus region (SGC-1)
     ax.contour(x,y,bsub,levels=[-20,20],colors='w',linewidths=1.2,linestyles='--')
     ax.contour(x,y,bsub,levels=[-20,20],colors='k',linewidths=0.4,linestyles='--')
     ax.set_xlim(hi,lo); ax.set_ylim(-23,17); ax.grid(alpha=0.3)
     ticks=np.arange(lo,hi+1,15); ax.set_xticks(ticks); ax.set_xticklabels([f'{t%360:g}' for t in ticks])
     ax.set_xlabel('R.A. [deg]'); ax.set_ylabel('Dec. [deg]')
-    ax.set_title(f'{lab}: SFD E(B-V); thick line: High-z Dark Energy Survey footprint; cyan: E(B-V) = 0.1 inside it; dashed: Galactic latitude b = ±20°', fontsize=10)
+    ax.set_title(f'{lab}: SFD E(B-V); thick line: High-z Dark Energy Survey footprint (dashed: SGC-1 bonus region); cyan: E(B-V) = 0.1 inside it; dashed: Galactic latitude b = ±20°', fontsize=10)
     plt.colorbar(im, ax=ax, fraction=0.02, pad=0.01, label='E(B-V)')
 plt.tight_layout(); plt.savefig('hiz_stripes_ebv.png', dpi=130); plt.savefig('hiz_stripes_ebv.pdf', dpi=150); print('ok')
